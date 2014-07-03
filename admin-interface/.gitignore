@@ -4,5 +4,6 @@ browser-bundle.min.js
 npm-debug.log
 build
 dist
-.sass_cache
+.sass-cache
+.tmp
 *~

@@ -21,13 +21,11 @@ grunt.initConfig({
     }
   },
   usemin: {
-    html: ['index.html'],
-    css: ['build/css/**/*.css'],
-    js: ['build/js/**/*.js']
+    html: 'dist/index.html'
   },
   filerev: {
     dist: {
-      src: ['dist/css/main.min.css', 'dist/js/browser.bundle.js']
+      src: ['dist/css/main.min.css', 'dist/js/browser.bundle.min.js']
     }
   },
   uglify: {
@@ -39,15 +37,25 @@ grunt.initConfig({
         sourceMap: true
       }
     }
+  },
+  copy: {
+    html: {
+      src: 'index.html',
+      dest: 'dist/index.html'
+    }
   }
 });
 
 grunt.loadNpmTasks('grunt-browserify');
+grunt.loadNpmTasks('grunt-contrib-concat');
+grunt.loadNpmTasks('grunt-contrib-cssmin');
 grunt.loadNpmTasks('grunt-contrib-sass');
+grunt.loadNpmTasks('grunt-contrib-uglify');
+grunt.loadNpmTasks('grunt-copy');
 grunt.loadNpmTasks('grunt-filerev');
 grunt.loadNpmTasks('grunt-replace');
 grunt.loadNpmTasks('grunt-usemin');
 
-grunt.registerTask('default', ['sass', 'browserify']);
-grunt.registerTask('dist', ['default', 'useminPrepare', 'filerev', 'usemin']);
+grunt.registerTask('default', ['sass', 'browserify', 'useminPrepare', 'concat']);
+grunt.registerTask('dist', ['copy', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
 }
