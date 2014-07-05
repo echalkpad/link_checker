@@ -5,5 +5,5 @@ go:
 install:
     - go get github.com/golang/lint/golint
 
-script: (cd scraper && make)
+script: (cd scraper && NOLINT=true make)
 
