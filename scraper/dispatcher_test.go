@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"testing"
 	"time"
 )
@@ -69,5 +70,41 @@ func TestDispatcherCallsProcessRequest(t *testing.T) {
 		return
 	case <-time.After(5 * time.Second):
 		t.Fatal("Dispatcher failed to quit 5 seconds after quitc sent")
+	}
+}
+
+func TestFanOutDispatcherCreatesWorkerProcesses(t *testing.T) {
+	numCreations := 0
+	factory := func() Dispatcher {
+		numCreations++
+		return NewDispatcher(newMockProcessor())
+	}
+
+	url, _ := url.Parse("http://www.cnn.com")
+
+	d := NewFanOutProcessor(WorkerFactory(factory))
+	d.ProcessRequest(&ScrapeRequest{url: url})
+	if numCreations != 1 {
+		t.Errorf("Expected numCreations to be 1, is %d", numCreations)
+	}
+}
+
+func TestFanOutDispatcherLimitsOneWorkerProcessPerHost(t *testing.T) {
+	numCreations := 0
+	factory := func() Dispatcher {
+		numCreations++
+		return NewDispatcher(newMockProcessor())
+	}
+
+	url1, _ := url.Parse("http://www.cnn.com")
+	url2, _ := url.Parse("http://www.cnn.com/some_article")
+	url3, _ := url.Parse("http://www.nytimes.com")
+
+	d := NewFanOutProcessor(WorkerFactory(factory))
+	d.ProcessRequest(&ScrapeRequest{url: url1})
+	d.ProcessRequest(&ScrapeRequest{url: url2})
+	d.ProcessRequest(&ScrapeRequest{url: url3})
+	if numCreations != 2 {
+		t.Errorf("Expected numCreations to be 2, is %d", numCreations)
 	}
 }

@@ -57,15 +57,50 @@ func (d *dispatcherImpl) QuitChan() chan bool {
 	return d.stopc
 }
 
-// ScrapeRequest is used to describe a request to the Dispatcher
-type ScrapeRequest struct {
-	url         *url.URL
-	followLinks bool
-	respChan    chan ScrapeResponse
+// WorkerFactory is a function that creates a specific instance of a Dispatcher.
+type WorkerFactory func() Dispatcher
+
+type fanOutProcessor struct {
+	workers       map[string]Dispatcher
+	workerFactory WorkerFactory
 }
 
-// ScrapeResponse is a response to a ScrapeRequest
+// NewFanOutProcessor creates a RequestProcessor that just forwards the request on to a worker
+// routine [creating one if necessary].
+func NewFanOutProcessor(wf WorkerFactory) RequestProcessor {
+	return &fanOutProcessor{workers: make(map[string]Dispatcher), workerFactory: wf}
+}
+
+func (d *fanOutProcessor) ProcessRequest(req *ScrapeRequest) {
+	w, ok := d.workers[req.url.Host]
+	if !ok {
+		w = d.workerFactory()
+		d.workers[req.url.Host] = w
+	}
+
+	w.ReqChan() <- *req
+}
+
+func (d *fanOutProcessor) ProcessQuit() {
+	for _, worker := range d.workers {
+		worker.QuitChan() <- true
+	}
+}
+
+// ScrapeRequest is used to describe a request to the Dispatcher
+type ScrapeRequest struct {
+	url      *url.URL
+	depth    int
+	respChan chan ScrapeResponse
+}
+
+// ScrapeResponse is a response to a ScrapeRequest. URL and Depth should be copied
+// from the ScrapeRequest and are used so the requester doesn't need to keep any state
+// around.
 type ScrapeResponse struct {
-	url    *url.URL
+	url   *url.URL
+	depth int
+
 	status int
+	links  []*url.URL
 }
