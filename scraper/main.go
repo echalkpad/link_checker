@@ -1,8 +1,8 @@
-/* The scraper command is a worker process that can check various URLs to make sure they still return content,
+/*The scraper command is a worker process that can check various URLs to make sure they still return content,
 and is also capable of discovering links on a page so they can be scraped in the future.
 
 The scraper leverages goroutines to scrape multiple domains concurrently.
- */
+*/
 package main
 
 import (

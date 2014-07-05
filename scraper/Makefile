@@ -1,5 +1,5 @@
 scraper: *.go
 	go fmt .
-	${GOPATH}/bin/golint .
+	golint .
 	go test
 	go build .
