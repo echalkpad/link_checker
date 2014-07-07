@@ -76,6 +76,7 @@ func (d *fanOutProcessor) ProcessRequest(req *ScrapeRequest) {
 	if !ok {
 		w = d.workerFactory()
 		d.workers[req.url.Host] = w
+		go w.Start()
 	}
 
 	w.ReqChan() <- *req

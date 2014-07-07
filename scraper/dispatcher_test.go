@@ -91,9 +91,14 @@ func TestFanOutDispatcherCreatesWorkerProcesses(t *testing.T) {
 
 func TestFanOutDispatcherLimitsOneWorkerProcessPerHost(t *testing.T) {
 	numCreations := 0
+	processors := make([]*mockProcessor, 0, 5)
+
 	factory := func() Dispatcher {
 		numCreations++
-		return NewDispatcher(newMockProcessor())
+		processor := newMockProcessor()
+
+		processors = append(processors, processor)
+		return NewDispatcher(processor)
 	}
 
 	url1, _ := url.Parse("http://www.cnn.com")
@@ -104,7 +109,35 @@ func TestFanOutDispatcherLimitsOneWorkerProcessPerHost(t *testing.T) {
 	d.ProcessRequest(&ScrapeRequest{url: url1})
 	d.ProcessRequest(&ScrapeRequest{url: url2})
 	d.ProcessRequest(&ScrapeRequest{url: url3})
+	time.Sleep(time.Second)
+	d.ProcessQuit()
+
 	if numCreations != 2 {
 		t.Errorf("Expected numCreations to be 2, is %d", numCreations)
 	}
+
+	urls := make([]*url.URL, 0, 5)
+
+	for _, processor := range processors {
+		for _, req := range processor.requests {
+			urls = append(urls, req.url)
+		}
+	}
+
+	expectedURLs := []*url.URL{url1, url2, url3}
+	for _, expectedURL := range expectedURLs {
+		if !inList(expectedURL, urls) {
+			t.Errorf("Expected to find URL %v in list but did not", expectedURL)
+		}
+	}
+}
+
+func inList(expectedURL *url.URL, urlList []*url.URL) bool {
+	for _, url := range urlList {
+		if expectedURL == url {
+			return true
+		}
+	}
+
+	return false
 }
