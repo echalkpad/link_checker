@@ -5,6 +5,8 @@ else
 endif
 
 scraper: *.go
+	go get code.google.com/p/go.net/html
+	go get code.google.com/p/go.net/html/atom
 	go fmt .
 	${LINT}
 	go test
