@@ -27,7 +27,6 @@ type Link struct {
  * an error if the page could not be parsed or other fatal errors
  */
 func ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error) {
-
 	const (
 		SearchForLink = iota
 		InsideLink
@@ -36,7 +35,6 @@ func ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error
 	tokenizer := html.NewTokenizer(r)
 	links := make([]Link, 0, 5)
 	warnings := make([]string, 0, 5)
-
 	state := SearchForLink
 
 	baseURL, err := url.Parse(baseURLS)
@@ -47,7 +45,6 @@ func ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error
 	var pendingLink Link
 
 	for {
-
 		tokenType := tokenizer.Next()
 		if tokenType == html.ErrorToken {
 			err := tokenizer.Err()
