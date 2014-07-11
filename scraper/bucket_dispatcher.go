@@ -21,12 +21,12 @@ type BucketDispatcher struct {
 }
 
 // NewBucketDispatcher creates a new bucket dispatcher that will ensure only max_tokens requests are in flight
-// a given second.
+// a given second. By default it will queue up to 1 minute's worth of requests.
 // Params:
 //  maxTokens = maximum number of requests a second to allow
 //  rpFactory = request processor factory - each new request will be passed to a new instance of a request processor
 func NewBucketDispatcher(maxTokens int, rpfactory RequestProcessorFactory) *BucketDispatcher {
-	return &BucketDispatcher{maxTokens, maxTokens, make([]*ScrapeRequest, 0, 5), rpfactory, make(chan ScrapeRequest, 50), make(chan bool)}
+	return &BucketDispatcher{maxTokens, maxTokens, make([]*ScrapeRequest, 0, 5), rpfactory, make(chan ScrapeRequest, 60*maxTokens), make(chan bool)}
 }
 
 // Start starts the event loop for a BucketDispatcher. This function will block waiting for and processing requests
