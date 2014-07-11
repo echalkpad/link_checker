@@ -47,6 +47,8 @@ func TestDispatcherCanQuit(t *testing.T) {
 }
 
 func TestDispatcherCallsProcessRequest(t *testing.T) {
+	t.Parallel()
+
 	done := make(chan bool, 1)
 	p := newMockProcessor()
 	d := NewDispatcher(p)
@@ -90,6 +92,8 @@ func TestFanOutDispatcherCreatesWorkerProcesses(t *testing.T) {
 }
 
 func TestFanOutDispatcherLimitsOneWorkerProcessPerHost(t *testing.T) {
+	t.Parallel()
+
 	numCreations := 0
 	processors := make([]*mockProcessor, 0, 5)
 

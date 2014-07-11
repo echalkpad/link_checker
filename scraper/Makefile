@@ -9,5 +9,5 @@ scraper: *.go
 	go get code.google.com/p/go.net/html/atom
 	go fmt .
 	${LINT}
-	go test
+	go test -parallel 5 -timeout 10s
 	go build .
