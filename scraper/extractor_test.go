@@ -12,19 +12,25 @@ var basicHTML = `
     <body>
       <h1>This is a header</h1>
       <p>I want to go to<a href="http://www.cnn.com">DA CNN</a>
-      <p><a href="http://www.complicated.com">This is a <b>link</b> with <i>some</i> images inside</p></a></p>
+      <p><a href="http://www.complicated.com">This is a <b>link</b> with <i>some</i> images inside</a></p>
+   </body>
+ </html>
+`
+
+var relativeLinkHTML = `
+	<!DOCTYPE html>
+  <html>
+    <head><title>My Title</title></head>
+    <body>
+      <h1>This is a header</h1>
+      <p>I want to go to<a href="/leading-slash">Leading Slash</a>
+      <p><a href="../relative">Relative</a></p>
    </body>
  </html>
 `
 
 var invalidHTML = `
-  <!DOCTYPE html>
-  <html>
-    <head><title>Weird nested links</title></head>
-    <body>
-      What happens <a href="http://www.link1.com">if you <a href="http://www.link2.com">do this?</a></a>
-    </body>
- </html>
+  This is <b>not a <p>Well-formed</b> PAGE
 `
 
 func TestCanExtractLinksFromPage(t *testing.T) {
@@ -46,11 +52,30 @@ func TestCanExtractLinksFromPage(t *testing.T) {
 }
 
 func TestCanExtractRelativeLinks(t *testing.T) {
+	links, warnings, err := ExtractLinksFromPage("http://www.bar.com/some_dir/some_subdir/", strings.NewReader(relativeLinkHTML))
+	if err != nil {
+		t.Fatalf("Expected no error from relativeLinkHTML, got %v", err)
+	}
+
+	if len(warnings) != 0 {
+		t.Errorf("Expected 0 warnings from parsing relativeLinkHTML, got %d", len(warnings))
+	}
+
+	if len(links) != 2 {
+		t.Fatalf("Expected 2 links in relativeLinkHTML, found %d", len(links))
+	}
+
+	checkLink(t, links[0], "http://www.bar.com/leading-slash", "Leading Slash")
+	checkLink(t, links[1], "http://www.bar.com/some_dir/relative", "Relative")
 
 }
 
-func TestReturnsErrorOnRandomPage(t *testing.T) {
+func TestReturnsErrorOnRandomBasePage(t *testing.T) {
+	_, _, err := ExtractLinksFromPage("1\\/%@!qwertyuiop!", strings.NewReader(invalidHTML))
 
+	if err == nil {
+		t.Fatalf("Expected error from errorHTML, got nil")
+	}
 }
 
 func checkLink(t *testing.T, l Link, expectedHref string, expectedAnchor string) {
