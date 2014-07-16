@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 )
 
@@ -84,9 +87,38 @@ type WebProcessor struct {
 }
 
 func (w *WebProcessor) ProcessRequest(r *ScrapeRequest) {
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp := &ScrapeResponse{url: r.url, depth: r.depth, links: make([]*Link, 0, 10)}
 
+	httpResp, err := client.Get(r.url.String())
+	if err != nil {
+		resp.err = err
+		resp.status = -1
+		r.respChan <- *resp
+		return
+	}
+
+	body, err := readBody(httpResp, 2000000)
+	if err != nil {
+		fmt.Printf("Error! %v", err)
+	} else {
+		fmt.Printf("Body! %v", string(body))
+	}
 }
 
 func (w *WebProcessor) ProcessQuit() {
 	// do nothing
+}
+
+func readBody(r *http.Response, maxLength int64) ([]byte, error) {
+	defer r.Body.Close()
+
+	if r.ContentLength > maxLength {
+		return nil, fmt.Errorf("Discarding because content length is greater than 2MB (%d)", r.ContentLength)
+	}
+
+	// If content-length is -1, for now assume these processes complete fast enough
+	// that consuming 2MB per request is fine
+	cappedR := NewAtMostNReader(2000000, r.Body)
+	return ioutil.ReadAll(cappedR)
 }

@@ -103,5 +103,6 @@ type ScrapeResponse struct {
 	depth int
 
 	status int
-	links  []*url.URL
+	err    error
+	links  []*Link
 }
