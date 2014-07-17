@@ -102,7 +102,8 @@ type ScrapeResponse struct {
 	url   *url.URL
 	depth int
 
-	status int
-	err    error
-	links  []*Link
+	status   int
+	err      error
+	links    []*Link
+	warnings []string
 }
