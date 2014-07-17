@@ -6,15 +6,30 @@ The scraper leverages goroutines to scrape multiple domains concurrently.
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"net/url"
-	//"time"
+	"time"
 )
 
 // getRootPages() retrieves the root pages to scrape from the service api
-func getRootPages() *url.URL {
-	ret, _ := url.Parse("http://www.cnn.com")
+func getRootPages() []*url.URL {
+	ret := make([]*url.URL, 2)
+
+	url1, _ := url.Parse("http://www.cnn.com")
+	ret[0] = url1
+
+	url2, _ := url.Parse("http://www.nytimes.com")
+	ret[1] = url2
+
 	return ret
+}
+
+func webProcessFactory() RequestProcessor {
+	return &WebProcessor{retriever: NewWebRetriever(), extractor: NewLinkExtractor()}
+}
+
+func workerFactory() Dispatcher {
+	return NewBucketDispatcher(10, RequestProcessorFactory(webProcessFactory))
 }
 
 // General architecture:
@@ -27,18 +42,32 @@ func getRootPages() *url.URL {
 // fill in response handling
 // --(url, follow_links) ---> Dispatcher [--> Worker -->] ResProcessor --(loop)
 func main() {
-	/*disp := NewDispatcher()
-	resp := make(chan ScrapeResponse)
+	p := NewFanOutProcessor(WorkerFactory(workerFactory))
+	fanout := NewDispatcher(p)
+	scrapeInterval := time.Duration(5)
+
+	respChan := make(chan ScrapeResponse)
+	var timer = time.After(scrapeInterval * time.Minute)
+
 	go func() {
 		for {
-			url := getRootPages()
-			req := ScrapeRequest{url, true, resp}
+			select {
+			case resp := <-respChan:
+				// TODO: Report results
+				// TODO: Trigger future scrapes based on depth
+				resp.Dump()
+			case <-timer:
+				urls := getRootPages()
+				for _, url := range urls {
+					req := ScrapeRequest{url, 0, respChan}
+					fmt.Printf("Dispatch for %s\n", url)
+					fanout.ReqChan() <- req
+				}
 
-			disp.ReqChan() <- req
-			fmt.Printf("rootPageGoRoutine sleeping for 1\n")
-			time.Sleep(1 * time.Minute)
+				timer = time.After(scrapeInterval * time.Minute)
+			}
 		}
 	}()
 
-	disp.Start() */
+	fanout.Start()
 }

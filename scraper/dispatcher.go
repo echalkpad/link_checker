@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
 )
 
@@ -106,4 +107,19 @@ type ScrapeResponse struct {
 	err      error
 	links    []*Link
 	warnings []string
+}
+
+func (r *ScrapeResponse) Dump() {
+	fmt.Printf("Response for: %s\n", r.url.String())
+	fmt.Printf("Status code: %d\n", r.status)
+	fmt.Printf("Error: %v\n", r.err)
+	fmt.Printf("Links:\n")
+	for _, l := range r.links {
+		fmt.Printf("%s (%s)\n", l.URL, l.anchorText)
+	}
+
+	fmt.Printf("Warnings:\n")
+	for _, w := range r.warnings {
+		fmt.Printf("%s\n", w)
+	}
 }
