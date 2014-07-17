@@ -34,7 +34,8 @@ var invalidHTML = `
 `
 
 func TestCanExtractLinksFromPage(t *testing.T) {
-	links, warnings, err := ExtractLinksFromPage("http://www.foo.com", strings.NewReader(basicHTML))
+	e := NewLinkExtractor()
+	links, warnings, err := e.ExtractLinksFromPage("http://www.foo.com", strings.NewReader(basicHTML))
 	if err != nil {
 		t.Fatalf("Expected no error from basicHTML, got %v", err)
 	}
@@ -52,7 +53,8 @@ func TestCanExtractLinksFromPage(t *testing.T) {
 }
 
 func TestCanExtractRelativeLinks(t *testing.T) {
-	links, warnings, err := ExtractLinksFromPage("http://www.bar.com/some_dir/some_subdir/", strings.NewReader(relativeLinkHTML))
+	e := NewLinkExtractor()
+	links, warnings, err := e.ExtractLinksFromPage("http://www.bar.com/some_dir/some_subdir/", strings.NewReader(relativeLinkHTML))
 	if err != nil {
 		t.Fatalf("Expected no error from relativeLinkHTML, got %v", err)
 	}
@@ -71,7 +73,8 @@ func TestCanExtractRelativeLinks(t *testing.T) {
 }
 
 func TestReturnsErrorOnRandomBasePage(t *testing.T) {
-	_, _, err := ExtractLinksFromPage("1\\/%@!qwertyuiop!", strings.NewReader(invalidHTML))
+	e := NewLinkExtractor()
+	_, _, err := e.ExtractLinksFromPage("1\\/%@!qwertyuiop!", strings.NewReader(invalidHTML))
 
 	if err == nil {
 		t.Fatalf("Expected error from errorHTML, got nil")

@@ -15,6 +15,19 @@ type Link struct {
 	anchorText string
 }
 
+// LinkExtractor is an interface representing an object that knows how to extract
+// links from a page.
+type LinkExtractor interface {
+	ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error)
+}
+
+type linkExtractorDefault struct{}
+
+// NewLinkExtractor creates a new LinkExtractor with the default implementation.
+func NewLinkExtractor() LinkExtractor {
+	return &linkExtractorDefault{}
+}
+
 /*ExtractLinksFromPage will scrape a webpage searching for any clickable links.
  * Params:
  *  baseURL: Is the URL of the page from the reader. Any relative links will be resolved from
@@ -26,7 +39,7 @@ type Link struct {
  * an array of string warnings for links that could not be parsed,
  * an error if the page could not be parsed or other fatal errors
  */
-func ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error) {
+func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error) {
 	const (
 		SearchForLink = iota
 		InsideLink
