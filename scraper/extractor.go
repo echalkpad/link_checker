@@ -18,7 +18,7 @@ type Link struct {
 // LinkExtractor is an interface representing an object that knows how to extract
 // links from a page.
 type LinkExtractor interface {
-	ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error)
+	ExtractLinksFromPage(baseURLS string, r io.Reader) ([]*Link, []string, error)
 }
 
 type linkExtractorDefault struct{}
@@ -39,14 +39,14 @@ func NewLinkExtractor() LinkExtractor {
  * an array of string warnings for links that could not be parsed,
  * an error if the page could not be parsed or other fatal errors
  */
-func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader) ([]Link, []string, error) {
+func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader) ([]*Link, []string, error) {
 	const (
 		SearchForLink = iota
 		InsideLink
 	)
 
 	tokenizer := html.NewTokenizer(r)
-	links := make([]Link, 0, 5)
+	links := make([]*Link, 0, 5)
 	warnings := make([]string, 0, 5)
 	state := SearchForLink
 
@@ -55,7 +55,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 		return nil, warnings, err
 	}
 
-	var pendingLink Link
+	var pendingLink *Link
 
 	for {
 		tokenType := tokenizer.Next()
@@ -81,7 +81,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 				continue
 			}
 
-			pendingLink = Link{href, ""}
+			pendingLink = &Link{URL: href}
 
 			if tokenType == html.SelfClosingTagToken {
 				links = append(links, pendingLink)
@@ -94,7 +94,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 			if tokenType == html.EndTagToken && token.DataAtom == atom.A {
 				links = append(links, pendingLink)
 				state = SearchForLink
-				pendingLink = Link{"", ""}
+				pendingLink = &Link{}
 				continue
 			}
 
