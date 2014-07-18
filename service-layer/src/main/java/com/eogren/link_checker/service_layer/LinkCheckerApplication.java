@@ -1,5 +1,6 @@
 package com.eogren.link_checker.service_layer;
 
+import com.eogren.link_checker.service_layer.data.InMemoryRootPageRepository;
 import com.eogren.link_checker.service_layer.resources.RootPageResource;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
@@ -21,6 +22,6 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
 
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) {
-        environment.jersey().register(new RootPageResource(null));
+        environment.jersey().register(new RootPageResource(new InMemoryRootPageRepository()));
     }
 }

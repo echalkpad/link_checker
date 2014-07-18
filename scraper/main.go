@@ -7,22 +7,8 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"time"
 )
-
-// getRootPages() retrieves the root pages to scrape from the service api
-func getRootPages() []*url.URL {
-	ret := make([]*url.URL, 2)
-
-	url1, _ := url.Parse("http://www.cnn.com")
-	ret[0] = url1
-
-	url2, _ := url.Parse("http://www.nytimes.com")
-	ret[1] = url2
-
-	return ret
-}
 
 func webProcessFactory() RequestProcessor {
 	return &WebProcessor{retriever: NewWebRetriever(), extractor: NewLinkExtractor()}
@@ -47,6 +33,7 @@ func main() {
 	scrapeInterval := time.Duration(5)
 
 	respChan := make(chan ScrapeResponse)
+	apiClient := NewAPIClient("http://localhost:8001", nil)
 	var timer = time.After(scrapeInterval * time.Minute)
 
 	go func() {
@@ -57,7 +44,12 @@ func main() {
 				// TODO: Trigger future scrapes based on depth
 				resp.Dump()
 			case <-timer:
-				urls := getRootPages()
+				urls, err := apiClient.GetRootPages()
+				if err != nil {
+					timer = time.After(scrapeInterval * 2 * time.Minute)
+					continue
+				}
+
 				for _, url := range urls {
 					req := ScrapeRequest{url, 0, respChan}
 					fmt.Printf("Dispatch for %s\n", url)

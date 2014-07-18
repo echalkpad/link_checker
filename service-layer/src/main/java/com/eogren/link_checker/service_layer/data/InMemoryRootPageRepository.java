@@ -13,6 +13,8 @@ public class InMemoryRootPageRepository implements RootPageRepository {
 
     public InMemoryRootPageRepository() {
         pages = new ArrayList<>();
+        pages.add(new RootPage("http://www.cnn.com"));
+        pages.add(new RootPage("http://www.nytimes.com"));
     }
 
 

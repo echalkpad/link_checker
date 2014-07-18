@@ -1,0 +1,11 @@
+{
+	"ArtifactsDest": "./out",
+	"TasksExclude": [
+		"go-install"
+	],
+	"TasksAppend": [
+		"go-fmt"
+	],
+	"BuildConstraints": "linux,darwin",
+	"ConfigVersion": "0.9"
+}
