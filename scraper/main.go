@@ -6,7 +6,7 @@ The scraper leverages goroutines to scrape multiple domains concurrently.
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -34,7 +34,8 @@ func main() {
 
 	respChan := make(chan ScrapeResponse)
 	apiClient := NewAPIClient("http://localhost:8001", nil)
-	var timer = time.After(scrapeInterval * time.Minute)
+
+	var timer = time.After(1 * time.Millisecond)
 
 	go func() {
 		for {
@@ -45,14 +46,16 @@ func main() {
 				resp.Dump()
 			case <-timer:
 				urls, err := apiClient.GetRootPages()
+
 				if err != nil {
+					log.Printf("Unable to retrieve root pages from API: %v", err)
 					timer = time.After(scrapeInterval * 2 * time.Minute)
 					continue
 				}
 
 				for _, url := range urls {
 					req := ScrapeRequest{url, 0, respChan}
-					fmt.Printf("Dispatch for %s\n", url)
+					log.Printf("Dispatch ScrapeRequest for %s\n", url)
 					fanout.ReqChan() <- req
 				}
 
