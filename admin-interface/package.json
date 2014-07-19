@@ -23,7 +23,8 @@
     "grunt-copy": "^0.1.0",
     "grunt-filerev": "^0.2.1",
     "grunt-usemin": "^2.3.0",
-    "reactify": "^0.13.1"
+    "reactify": "^0.13.1",
+    "grunt-contrib-watch": "~0.6.1"
   },
   "browserify": {
     "transform": [

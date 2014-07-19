@@ -10,7 +10,7 @@ grunt.initConfig({
   sass: {
     dist: {
       files: {
-        'build/css/main.css': 'scss/base.scss'
+        'build/css/main.css': 'scss/main.scss'
       }
     }
   },
@@ -43,6 +43,30 @@ grunt.initConfig({
       src: 'index.html',
       dest: 'dist/index.html'
     }
+  },
+  watch: {
+      scripts: {
+          files: ['js/**/*.js'],
+          tasks: ['browserify'],
+          options: {
+            livereload: true
+          }
+      },
+      styles: {
+          files: ['**/*.scss'],
+          tasks: ['sass'],
+          options: {
+              livereload: true
+          }
+      }
+  },
+  replace: {
+      patterns: [
+          {
+              match: /<!--\s*DEVONLY\s*-->.*?<!--\s*ENDDEVONLY\s*-->/gm,
+              replacement: ""
+          }
+      ]
   }
 });
 
@@ -51,11 +75,13 @@ grunt.loadNpmTasks('grunt-contrib-concat');
 grunt.loadNpmTasks('grunt-contrib-cssmin');
 grunt.loadNpmTasks('grunt-contrib-sass');
 grunt.loadNpmTasks('grunt-contrib-uglify');
+grunt.loadNpmTasks('grunt-contrib-watch');
 grunt.loadNpmTasks('grunt-copy');
 grunt.loadNpmTasks('grunt-filerev');
 grunt.loadNpmTasks('grunt-replace');
 grunt.loadNpmTasks('grunt-usemin');
 
 grunt.registerTask('default', ['sass', 'browserify', 'useminPrepare', 'concat']);
-grunt.registerTask('dist', ['copy', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
+grunt.registerTask('dev', ['default', 'watch']);
+grunt.registerTask('dist', ['copy', 'replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
 }
