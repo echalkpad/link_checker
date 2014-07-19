@@ -1,0 +1,13 @@
+header {
+  @include fill-parent;
+  border-bottom: 1px solid black;
+}
+
+#sidebar {
+  @include span-columns(3);
+  border-right: 1px solid $light-grey;
+}
+
+#main {
+  @include span-columns(9);
+}
