@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 )
 
 type mockWebRetriever struct {
@@ -15,6 +16,10 @@ type mockWebRetriever struct {
 func (r *mockWebRetriever) GetURL(url string, maxLength int64) (io.Reader, int, error) {
 	r.lastURL = url
 	return strings.NewReader(r.resp), r.sc, nil
+}
+
+func (r *mockWebRetriever) SetTimeout(t time.Duration) {
+
 }
 
 func TestApiClientCanParseRootPages(t *testing.T) {

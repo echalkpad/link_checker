@@ -13,18 +13,27 @@ import (
 // maxLength bytes.
 type WebRetriever interface {
 	GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error)
+	SetTimeout(d time.Duration)
 }
 
 // NewWebRetriever returns the default impl of a WebRetriever.
 func NewWebRetriever() WebRetriever {
-	return &webRetrieverDefault{}
+	return &webRetrieverDefault{client: &http.Client{Timeout: 30 * time.Second}}
 }
 
-type webRetrieverDefault struct{}
+type webRetrieverDefault struct {
+	client *http.Client
+}
+
+func (w *webRetrieverDefault) SetTimeout(d time.Duration) {
+	w.client.Timeout = d
+}
 
 func (w *webRetrieverDefault) GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error) {
-	client := &http.Client{Timeout: 30 * time.Second}
-	httpResp, err := client.Get(url)
+	httpResp, err := w.client.Get(url)
+	if err != nil {
+		return nil, -1, err
+	}
 
 	defer httpResp.Body.Close()
 
