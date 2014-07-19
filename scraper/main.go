@@ -33,7 +33,7 @@ func main() {
 	scrapeInterval := time.Duration(5)
 
 	respChan := make(chan ScrapeResponse)
-	apiClient := NewAPIClient("http://localhost:8001", nil)
+	apiClient := NewAPIClient("http://localhost:8080", nil)
 
 	var timer = time.After(1 * time.Millisecond)
 
