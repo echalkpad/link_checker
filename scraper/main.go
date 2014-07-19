@@ -7,6 +7,7 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"time"
 )
 
@@ -42,8 +43,30 @@ func main() {
 			select {
 			case resp := <-respChan:
 				// TODO: Report results
-				// TODO: Trigger future scrapes based on depth
 				resp.Dump()
+				if resp.Depth > 0 {
+					uniqueURLs := make(map[string]bool)
+					for _, l := range resp.Links {
+						uniqueURLs[l.URL] = true
+					}
+
+					for strURL := range uniqueURLs {
+						parsedURL, err := url.Parse(strURL)
+						if err != nil {
+							log.Printf("Failed to parse %s, skipping", strURL)
+							continue
+						}
+
+						req := ScrapeRequest{
+							url:      parsedURL,
+							depth:    resp.Depth - 1,
+							respChan: respChan,
+						}
+
+						log.Printf("Dispatch ScrapeRequest for %s\n", strURL)
+						fanout.ReqChan() <- req
+					}
+				}
 			case <-timer:
 				urls, err := apiClient.GetRootPages()
 
@@ -54,7 +77,11 @@ func main() {
 				}
 
 				for _, url := range urls {
-					req := ScrapeRequest{url, 0, respChan}
+					req := ScrapeRequest{
+						url:      url,
+						depth:    1,
+						respChan: respChan,
+					}
 					log.Printf("Dispatch ScrapeRequest for %s\n", url)
 					fanout.ReqChan() <- req
 				}
