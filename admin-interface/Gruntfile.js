@@ -61,12 +61,19 @@ grunt.initConfig({
       }
   },
   replace: {
-      patterns: [
-          {
-              match: /<!--\s*DEVONLY\s*-->.*?<!--\s*ENDDEVONLY\s*-->/gm,
-              replacement: ""
-          }
-      ]
+      dist: {
+          options: {
+              patterns: [
+                  {
+                      match: /<!--\s*DEVONLY\s*-->[\s\S]*?<!--\s*ENDDEVONLY\s*-->/gm,
+                      replacement: ""
+                  }
+              ]
+          },
+          files: [
+              {expand: true, flatten: true, src: ['index.html'], dest: 'dist/'}
+          ]
+      }
   }
 });
 
@@ -76,12 +83,11 @@ grunt.loadNpmTasks('grunt-contrib-cssmin');
 grunt.loadNpmTasks('grunt-contrib-sass');
 grunt.loadNpmTasks('grunt-contrib-uglify');
 grunt.loadNpmTasks('grunt-contrib-watch');
-grunt.loadNpmTasks('grunt-copy');
 grunt.loadNpmTasks('grunt-filerev');
 grunt.loadNpmTasks('grunt-replace');
 grunt.loadNpmTasks('grunt-usemin');
 
 grunt.registerTask('default', ['sass', 'browserify', 'useminPrepare', 'concat']);
 grunt.registerTask('dev', ['default', 'watch']);
-grunt.registerTask('dist', ['copy', 'replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
+grunt.registerTask('dist', ['replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
 }
