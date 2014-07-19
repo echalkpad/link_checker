@@ -1,9 +1,5 @@
-FROM ubuntu:14.04
-
+FROM eogren/ubuntu_base
 MAINTAINER Eric Ogren <eogren@gmail.com>
-
-# Add core
-RUN apt-get update
 
 ADD scraper /root/scraper
 CMD /root/scraper
