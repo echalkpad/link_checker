@@ -100,26 +100,26 @@ type ScrapeRequest struct {
 // from the ScrapeRequest and are used so the requester doesn't need to keep any state
 // around.
 type ScrapeResponse struct {
-	url   *url.URL
-	depth int
+	URL   *url.URL
+	Depth int
 
-	status   int
-	err      error
-	links    []*Link
-	warnings []string
+	Status   int
+	Err      error
+	Links    []*Link
+	Warnings []string
 }
 
 func (r *ScrapeResponse) Dump() {
-	fmt.Printf("Response for: %s\n", r.url.String())
-	fmt.Printf("Status code: %d\n", r.status)
-	fmt.Printf("Error: %v\n", r.err)
+	fmt.Printf("Response for: %s\n", r.URL.String())
+	fmt.Printf("Status code: %d\n", r.Status)
+	fmt.Printf("Error: %v\n", r.Err)
 	fmt.Printf("Links:\n")
-	for _, l := range r.links {
+	for _, l := range r.Links {
 		fmt.Printf("%s (%s)\n", l.URL, l.anchorText)
 	}
 
 	fmt.Printf("Warnings:\n")
-	for _, w := range r.warnings {
+	for _, w := range r.Warnings {
 		fmt.Printf("%s\n", w)
 	}
 }

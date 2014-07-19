@@ -92,21 +92,21 @@ func NewWebProcessor(r WebRetriever, e LinkExtractor) WebProcessor {
 }
 
 func (w *WebProcessor) ProcessRequest(r *ScrapeRequest) {
-	resp := ScrapeResponse{url: r.url, depth: r.depth}
+	resp := ScrapeResponse{URL: r.url, Depth: r.depth}
 
 	body, statusCode, err := w.retriever.GetURL(r.url.String(), 2000000)
-	resp.status = statusCode
+	resp.Status = statusCode
 
 	if statusCode < 200 || statusCode > 299 || err != nil {
-		resp.err = err
+		resp.Err = err
 		r.respChan <- resp
 		return
 	}
 
 	links, warnings, err := w.extractor.ExtractLinksFromPage(r.url.String(), body)
-	resp.links = links
-	resp.warnings = warnings
-	resp.err = err
+	resp.Links = links
+	resp.Warnings = warnings
+	resp.Err = err
 
 	r.respChan <- resp
 }
