@@ -1,5 +1,6 @@
 /** @jsx React.DOM */
 var React = require('react');
+var RootPageStore = require('../stores/rootpagestore');
 
 var RootPage = React.createClass({
     propTypes: {
@@ -13,7 +14,8 @@ var RootPage = React.createClass({
     },
 
     _onDelete: function() {
-        console.log("onDelete " + this.props.url);
+        // TODO: Use Dispatcher instead of direct call to store?
+        RootPageStore.delete(this.props.url);
     }
 });
 

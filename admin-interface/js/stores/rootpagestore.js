@@ -46,6 +46,22 @@ var syncNewPageToServer = function(data) {
      });
 };
 
+var deletePageFromServer = function(url) {
+    var url = config.baseURL + endpoint + '/' + url;
+    $.ajax(
+        url,
+        {
+            type: 'DELETE'
+        }
+    ).done(retrievePages);
+};
+
+var urlMatches = function(url) {
+    return function isDuplicate(element) {
+        return element.url === url;
+    };
+};
+
 var RootPageStore = merge(EventEmitter.prototype, {
     getAll: function() {
         return _rootpages;
@@ -74,16 +90,28 @@ var RootPageStore = merge(EventEmitter.prototype, {
         timer = setInterval(retrievePages, updateInterval);
     },
 
+    /**
+     * Add a new RootPage to the store. Will automatically sync
+     * to the server.
+     * @param data RootPage to add
+     */
     add: function(data) {
-        if (_rootpages.some(function isDuplicate(element) {
-            return element.url === data.url;
-        })) {
+        if (_rootpages.some(urlMatches(data.url))) {
             console.log("DUPE");
             return;
         }
 
         _rootpages.push(data);
         syncNewPageToServer(data);
+    },
+
+    /**
+     * Delete a RootPage from the store with the given url.
+     * @param url URL to delete
+     */
+    delete: function(url) {
+        _rootpages = _rootpages.filter(urlMatches(url));
+        deletePageFromServer(url);
     }
 });
 
