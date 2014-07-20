@@ -8,6 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class RootPage {
     private String url;
 
+    /**
+     * Creates a new RootPage object initialized to defaults.
+     */
     public RootPage() {
 
     }
@@ -16,6 +19,9 @@ public class RootPage {
         this.url = url;
     }
 
+    /**
+     * Retrieves the URL of the root object.
+     */
     @JsonProperty
     public String getUrl() {
         return url;

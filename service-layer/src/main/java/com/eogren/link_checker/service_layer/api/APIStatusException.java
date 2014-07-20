@@ -4,7 +4,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 /**
- * APIStatusException can be thrown when an error should be returned to an API client
+ * APIStatusException can be thrown when an error should be returned to an API client.
  */
 public class APIStatusException extends WebApplicationException {
     protected Response response;
@@ -20,7 +20,7 @@ public class APIStatusException extends WebApplicationException {
     }
 
     /**
-     * Returns the HTTP Response
+     * Returns the HTTP Response that will be rendered to the client.
      */
     @Override
     public Response getResponse() {

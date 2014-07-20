@@ -14,15 +14,26 @@ import java.util.List;
 
 @Path("/api/v1/root_page/")
 @Produces(MediaType.APPLICATION_JSON)
+/**
+ * RootPageResource represents the API calls necessary to deal with RootPages.
+ */
 public class RootPageResource {
     private final RootPageRepository repository;
 
+    /**
+     * Create a RootPageResource handler that will use the given repository.
+     * @param repository Repository that stores/retrieves information about Root Pages.
+     */
     public RootPageResource(RootPageRepository repository) {
         this.repository = repository;
     }
 
     @GET
     @Timed
+    /**
+     * Return a list of all RootPages in the system.
+     * TODO: Pagination
+     */
     public List<RootPage> getListing() {
         return repository.getAllRootPages();
     }
@@ -30,6 +41,10 @@ public class RootPageResource {
     @PUT
     @Timed
     @Path("{url: .*}")
+    /**
+     * Add a new RootPage to the system. The root page URL is used as the key.
+     * TODO: Normalize URLs
+     */
     public APIStatus newRootPage(@PathParam("url") String url,
                                  @Valid RootPage newPage) {
         if (!url.equals(newPage.getUrl())) {
