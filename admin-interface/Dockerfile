@@ -12,4 +12,4 @@ EXPOSE 80
 # Add the built app to webroot
 ADD dist/ /var/www/html/
 
-CMD 'nginx'
+CMD ["nginx"]
