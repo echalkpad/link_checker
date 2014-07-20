@@ -4,10 +4,17 @@ server {
 
   # Make site accessible from       http://localhost/
   server_name localhost;
+  gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+  gzip_vary on;
 
   location / {
     # First attempt to serve request as file, then
     # as directory, then fall back to     index.html
     try_files $uri $uri/ /index.html;
+  }
+
+  # We assume any CSS or JS this app hosts is cachebusted
+  location ~ \.(css|js) {
+    expires max;
   }
 }
