@@ -61,6 +61,22 @@ public class RootPageResource {
 
     }
 
+    @DELETE
+    @Timed
+    @Path("{url: .*}")
+    /**
+     * Delete a RootPage from the system. The root page URL is used as the key.
+     */
+    public APIStatus deleteRootPage(@PathParam("url") String url) {
+        if (!repository.pageExists(url)) {
+            throw new APIStatusException(new APIStatus(false, "Resource not found"), 404);
+        }
+
+        repository.deletePage(url);
+        return new APIStatus(true, "Deleted successfully.");
+    }
+
+
     @GET
     @Timed
     @Path("{url: .*}")

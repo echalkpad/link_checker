@@ -22,4 +22,19 @@ public interface RootPageRepository {
      * @param newPage New page to add.
      */
     void addPage(RootPage newPage);
+
+    /**
+     * Delete a page from the repository.
+     * @param url URL of the page to delete.
+     */
+    void deletePage(String url);
+
+    /**
+     * Checks whether a page exists in the repository.
+     * @param url URL of the page to look for
+     * @return True if found in the repository; false if not
+     */
+    boolean pageExists(String url);
+
+
 }
