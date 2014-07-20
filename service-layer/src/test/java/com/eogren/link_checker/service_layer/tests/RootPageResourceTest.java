@@ -16,9 +16,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Created by eric on 7/3/14.
- */
 public class RootPageResourceTest {
     private class MockRootPageRepository implements RootPageRepository {
         private ArrayList<RootPage> pages;
