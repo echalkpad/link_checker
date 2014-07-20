@@ -1,41 +1,57 @@
 package com.eogren.link_checker.service_layer.tests;
 
-import com.eogren.link_checker.service_layer.core.RootPage;
+import com.eogren.link_checker.service_layer.api.RootPage;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 import com.eogren.link_checker.service_layer.resources.RootPageResource;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.ws.rs.core.PathSegment;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Created by eric on 7/3/14.
  */
 public class RootPageResourceTest {
     private class MockRootPageRepository implements RootPageRepository {
+        private ArrayList<RootPage> pages;
+
+        public MockRootPageRepository(String[] urls) {
+            pages = new ArrayList<>();
+
+            for (String url : urls) {
+                addPage(new RootPage(url));
+            }
+        }
 
         @Override
         public List<RootPage> getAllRootPages() {
-            RootPage rp1 = new RootPage("http://www.cnn.com");
-            RootPage rp2 = new RootPage("http://www.nytimes.com");
-
-            ArrayList<RootPage> ret = new ArrayList<>();
-            ret.add(rp1);
-            ret.add(rp2);
-
-            return ret;
+            return pages;
         }
+
+        @Override
+        public void addPage(RootPage page) {
+            pages.add(page);
+        }
+
     }
 
-    private RootPageRepository repository;
+    private MockRootPageRepository repository;
+    private String[] initialUrls;
 
     @Before
     public void setup() {
-        repository = new MockRootPageRepository();
+        initialUrls = new String[] {
+                "http://www.cnn.com",
+                "http://www.nytimes.com"
+        };
+        repository = new MockRootPageRepository(initialUrls);
     }
 
     @Test
@@ -43,7 +59,31 @@ public class RootPageResourceTest {
         RootPageResource sut = new RootPageResource(repository);
         List<RootPage> from_sut = sut.getListing();
 
-        assertEquals(from_sut.get(0), new RootPage("http://www.cnn.com"));
-        assertEquals(from_sut.get(1), new RootPage("http://www.nytimes.com"));
+        for (String url : initialUrls) {
+            findUrlInList(from_sut, url);
+        }
+    }
+
+    @Test
+    public void testRootPageResourceNewAddsANewUrl() {
+        RootPageResource sut = new RootPageResource(repository);
+        String newPageUrl = "http://www.newpage.com";
+
+        RootPage newPage = new RootPage(newPageUrl);
+
+        sut.newRootPage(newPage.getUrl(), newPage);
+
+        List<RootPage> allPages = repository.getAllRootPages();
+        findUrlInList(allPages, newPageUrl);
+    }
+
+    protected void findUrlInList(List<RootPage> list, String urlToFind) {
+        for (RootPage rp : list) {
+            if (rp.getUrl() == urlToFind) {
+                return;
+            }
+        }
+
+        fail(String.format("Expected to find %s in list but did not", urlToFind));
     }
 }

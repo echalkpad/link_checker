@@ -30,6 +30,22 @@ var retrievePages = function() {
     });
 };
 
+var syncNewPageToServer = function(data) {
+    var url = config.baseURL + endpoint + '/' + data.url;
+    $.ajax(
+        url,
+        {
+            data: JSON.stringify(data),
+            type: 'PUT',
+            processData: false,
+            contentType: 'application/json'
+        }
+    ).done(retrievePages)
+     .fail(function() {
+        console.log("Put failed!")
+     });
+};
+
 var RootPageStore = merge(EventEmitter.prototype, {
     getAll: function() {
         return _rootpages;
@@ -56,6 +72,18 @@ var RootPageStore = merge(EventEmitter.prototype, {
     startSync: function() {
         retrievePages();
         timer = setInterval(retrievePages, updateInterval);
+    },
+
+    add: function(data) {
+        if (_rootpages.some(function isDuplicate(element) {
+            return element.url === data.url;
+        })) {
+            console.log("DUPE");
+            return;
+        }
+
+        _rootpages.push(data);
+        syncNewPageToServer(data);
     }
 });
 

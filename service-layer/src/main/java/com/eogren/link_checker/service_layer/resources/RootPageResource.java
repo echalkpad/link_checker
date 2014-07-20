@@ -1,22 +1,17 @@
 package com.eogren.link_checker.service_layer.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.eogren.link_checker.service_layer.core.RootPage;
+import com.eogren.link_checker.service_layer.api.APIStatus;
+import com.eogren.link_checker.service_layer.api.RootPage;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.validation.Valid;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
+import javax.ws.rs.core.PathSegment;
 import java.util.List;
 
-/**
- * Created by eric on 7/3/14.
- */
-@Path("/api/v1/root_page")
+@Path("/api/v1/root_page/")
 @Produces(MediaType.APPLICATION_JSON)
 public class RootPageResource {
     private final RootPageRepository repository;
@@ -29,6 +24,25 @@ public class RootPageResource {
     @Timed
     public List<RootPage> getListing() {
         return repository.getAllRootPages();
+    }
+
+    @PUT
+    @Timed
+    @Path("{url: .*}")
+    public APIStatus newRootPage(@PathParam("url") String url,
+                                 @Valid RootPage newPage) {
+        // TODO: Throw if url doesn't match? Or use key and ignore body
+
+        repository.addPage(newPage);
+        return new APIStatus(true, String.format("Successfully added %s", url));
+
+    }
+
+    @GET
+    @Timed
+    @Path("{url: .*}")
+    public APIStatus testing(@PathParam("url") String url) {
+        return new APIStatus(true, String.format("%s", url));
     }
 
 }

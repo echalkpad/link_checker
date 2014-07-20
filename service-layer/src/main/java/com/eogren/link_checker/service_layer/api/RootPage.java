@@ -1,4 +1,4 @@
-package com.eogren.link_checker.service_layer.core;
+package com.eogren.link_checker.service_layer.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

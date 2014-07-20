@@ -28,7 +28,10 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) {
         environment.jersey().register(new RootPageResource(new InMemoryRootPageRepository()));
-        final FilterRegistration.Dynamic cors = environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+
+        final FilterRegistration.Dynamic cors =
+                environment.servlets().addFilter("crossOriginRequests", CrossOriginFilter.class);
+        cors.setInitParameter("allowedMethods", "OPTIONS,GET,POST,PUT,HEAD,DELETE");
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 }
