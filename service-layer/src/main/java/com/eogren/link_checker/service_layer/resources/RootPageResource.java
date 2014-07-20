@@ -2,6 +2,7 @@ package com.eogren.link_checker.service_layer.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import com.eogren.link_checker.service_layer.api.APIStatus;
+import com.eogren.link_checker.service_layer.api.APIStatusException;
 import com.eogren.link_checker.service_layer.api.RootPage;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 
@@ -31,7 +32,14 @@ public class RootPageResource {
     @Path("{url: .*}")
     public APIStatus newRootPage(@PathParam("url") String url,
                                  @Valid RootPage newPage) {
-        // TODO: Throw if url doesn't match? Or use key and ignore body
+        if (!url.equals(newPage.getUrl())) {
+            throw new APIStatusException(
+                    new APIStatus(false, String.format("Key from URL %s does not match key fro object %s",
+                            url,
+                            newPage.getUrl())),
+                    400
+            );
+        }
 
         repository.addPage(newPage);
         return new APIStatus(true, String.format("Successfully added %s", url));

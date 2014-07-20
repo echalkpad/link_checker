@@ -1,5 +1,6 @@
 package com.eogren.link_checker.service_layer.tests;
 
+import com.eogren.link_checker.service_layer.api.APIStatusException;
 import com.eogren.link_checker.service_layer.api.RootPage;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 import com.eogren.link_checker.service_layer.resources.RootPageResource;
@@ -75,6 +76,15 @@ public class RootPageResourceTest {
 
         List<RootPage> allPages = repository.getAllRootPages();
         findUrlInList(allPages, newPageUrl);
+    }
+
+    @Test(expected = APIStatusException.class)
+    public void testRootPageResourceNewThrowsErrorOnMismatchedUrl() {
+        RootPageResource sut = new RootPageResource(repository);
+        String mismatchedUrl = "http://www.newpage.com";
+
+        RootPage newPage = new RootPage("http://www.a.different.url");
+        sut.newRootPage(mismatchedUrl, newPage);
     }
 
     protected void findUrlInList(List<RootPage> list, String urlToFind) {
