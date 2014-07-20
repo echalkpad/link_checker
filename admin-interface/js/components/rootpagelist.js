@@ -4,13 +4,28 @@ var RootPage = require('./rootpage');
 var RootPageStore = require('../stores/rootpagestore');
 var url = require('url');
 
+var urlHostNameCompare = function(url1, url2) {
+    var parsed1 = url.parse(url1.url).host.toLowerCase();
+    var parsed2 = url.parse(url2.url).host.toLowerCase();
+
+    if (parsed1 < parsed2) {
+        return -1;
+    } else if (parsed1 > parsed2) {
+        return 1;
+    } else {
+        return 0;
+    }
+};
+
 var RootPageList = React.createClass({
     getInitialState: function() {
         return { new_url: "" }
     },
 
     render: function() {
-        var nodes = this.props.data.map(function (rp) {
+        var sortedNodes = this.props.data.slice().sort(urlHostNameCompare);
+
+        var nodes = sortedNodes.map(function (rp) {
             return(<RootPage key={rp.url} url={rp.url} />);
         });
 
