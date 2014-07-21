@@ -1,0 +1,7 @@
+[Unit]
+Description=Link Checker Scraper
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker run --rm --name scraper eogren/scraper

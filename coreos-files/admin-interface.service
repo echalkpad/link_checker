@@ -1,0 +1,14 @@
+[Unit]
+Description=Link Checker Admin Interface
+After=docker.service
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStart=/bin/bash -c '/usr/bin/docker run --rm --name admin-interface-%H-%i -p %i:80 eogren/admin-interface'
+ExecStop=/usr/bin/docker kill admin-interface-%H-%i
+ExecStartPost=/bin/bash -c '/usr/bin/etcdctl set /services/admin-interface/%H:%i "server %H_%i ${COREOS_PUBLIC_IPV4}:%i check"'
+ExecStopPost=/usr/bin/etcdctl rm /services/admin-interface/%H:%i
+
+[X-Fleet]
+X-Conflicts=admin-interface*.service

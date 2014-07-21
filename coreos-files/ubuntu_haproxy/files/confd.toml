@@ -1,0 +1,5 @@
+[confd]
+confdir = "/etc/confd"
+interval = 120
+etcd_nodes = [ "http://10.1.42.1:4001" ]
+

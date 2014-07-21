@@ -1,0 +1,14 @@
+[Unit]
+Description=Link Checker Service Layer
+After=docker.service
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/environment
+ExecStart=/bin/bash -c '/usr/bin/docker run --rm --name service-layer-%H-%i -p %i:8080 -p `expr %i + 1`:8081 eogren/service-layer'
+ExecStop=/usr/bin/docker kill service-layer-%H-%i
+ExecStartPost=/bin/bash -c '/usr/bin/etcdctl set /services/service-layer/%H:%i "server %H_%i ${COREOS_PUBLIC_IPV4}:%i check port `expr %i + 1`"'
+ExecStopPost=/usr/bin/etcdctl rm /services/service-layer/%H:%i
+
+[X-Fleet]
+X-Conflicts=service-layer*.service

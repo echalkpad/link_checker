@@ -1,0 +1,10 @@
+[template]
+src = "haproxy.conf.tmpl"
+dest = "/etc/haproxy/haproxy.cfg"
+keys = [
+	"/services/admin-interface",
+	"/services/service-layer",
+]
+check_cmd = "/usr/sbin/haproxy -c -q -f {{ .src }}"
+reload_cmd = "/usr/bin/supervisorctl -c /etc/supervisor/supervisord.conf restart haproxy"
+

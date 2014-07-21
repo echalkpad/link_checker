@@ -1,0 +1,9 @@
+[Unit]
+Description=Link Checker Service Registrar
+BindsTo=service-layer.service
+
+[Service]
+ExecStart=/usr/bin/docker run --rm --name service-layer -p 8080:8080 eogren/service-layer
+
+[X-Fleet]
+X-ConditionMachineOf=service-layer.service
