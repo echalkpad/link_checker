@@ -3,13 +3,12 @@ package com.eogren.link_checker.service_layer.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.eogren.link_checker.service_layer.api.APIStatus;
 import com.eogren.link_checker.service_layer.api.APIStatusException;
-import com.eogren.link_checker.service_layer.api.RootPage;
+import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.PathSegment;
 import java.util.List;
 
 @Path("/api/v1/root_page/")
@@ -34,7 +33,7 @@ public class RootPageResource {
      * Return a list of all RootPages in the system.
      * TODO: Pagination
      */
-    public List<RootPage> getListing() {
+    public List<Page> getListing() {
         return repository.getAllRootPages();
     }
 
@@ -42,14 +41,14 @@ public class RootPageResource {
     @Timed
     @Path("{url: .*}")
     /**
-     * Add a new RootPage to the system. The root page URL is used as the key.
+     * Add a new Page to the system. The root page URL is used as the key.
      * TODO: Normalize URLs
      */
     public APIStatus newRootPage(@PathParam("url") String url,
-                                 @Valid RootPage newPage) {
+                                 @Valid Page newPage) {
         if (!url.equals(newPage.getUrl())) {
             throw new APIStatusException(
-                    new APIStatus(false, String.format("Key from URL %s does not match key fro object %s",
+                    new APIStatus(false, String.format("Key from URL %s does not match key for object %s",
                             url,
                             newPage.getUrl())),
                     400
@@ -65,7 +64,7 @@ public class RootPageResource {
     @Timed
     @Path("{url: .*}")
     /**
-     * Delete a RootPage from the system. The root page URL is used as the key.
+     * Delete a Page from the system. The root page URL is used as the key.
      */
     public APIStatus deleteRootPage(@PathParam("url") String url) {
         if (!repository.pageExists(url)) {

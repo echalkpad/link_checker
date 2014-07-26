@@ -1,6 +1,6 @@
 package com.eogren.link_checker.service_layer.data;
 
-import com.eogren.link_checker.service_layer.api.RootPage;
+import com.eogren.link_checker.service_layer.api.Page;
 
 import java.util.List;
 
@@ -14,14 +14,14 @@ public interface RootPageRepository {
      * Retrieve all known root pages.
      * @return A list of RootPages contained in the repository.
      */
-    List<RootPage> getAllRootPages();
+    List<Page> getAllRootPages();
 
     /**
      * Add a new page to the repository.
      * TODO: Should throw exception
      * @param newPage New page to add.
      */
-    void addPage(RootPage newPage);
+    void addPage(Page newPage);
 
     /**
      * Delete a page from the repository.

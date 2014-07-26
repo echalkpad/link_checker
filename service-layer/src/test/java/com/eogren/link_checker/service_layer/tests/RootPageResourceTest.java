@@ -1,10 +1,11 @@
 package com.eogren.link_checker.service_layer.tests;
 
 import com.eogren.link_checker.service_layer.api.APIStatusException;
-import com.eogren.link_checker.service_layer.api.RootPage;
+import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
 import com.eogren.link_checker.service_layer.resources.RootPageResource;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,23 +17,23 @@ import static org.junit.Assert.*;
 
 public class RootPageResourceTest {
     private class MockRootPageRepository implements RootPageRepository {
-        private List<RootPage> pages;
+        private List<Page> pages;
 
         public MockRootPageRepository(String[] urls) {
             pages = new ArrayList<>();
 
             for (String url : urls) {
-                addPage(new RootPage(url));
+                addPage(createPage(url));
             }
         }
 
         @Override
-        public List<RootPage> getAllRootPages() {
+        public List<Page> getAllRootPages() {
             return pages;
         }
 
         @Override
-        public void addPage(RootPage page) {
+        public void addPage(Page page) {
             pages.add(page);
         }
 
@@ -64,7 +65,7 @@ public class RootPageResourceTest {
 
     @Test
     public void testRootPageResourceSummaryReturnsUrls() {
-        List<RootPage> from_sut = sut.getListing();
+        List<Page> from_sut = sut.getListing();
 
         for (String url : initialUrls) {
             assertUrlInList(from_sut, url);
@@ -75,11 +76,11 @@ public class RootPageResourceTest {
     public void testRootPageResourceNewAddsANewUrl() {
         String newPageUrl = "http://www.newpage.com";
 
-        RootPage newPage = new RootPage(newPageUrl);
+        Page newPage = createPage(newPageUrl);
 
         sut.newRootPage(newPage.getUrl(), newPage);
 
-        List<RootPage> allPages = repository.getAllRootPages();
+        List<Page> allPages = repository.getAllRootPages();
         assertUrlInList(allPages, newPageUrl);
     }
 
@@ -87,7 +88,7 @@ public class RootPageResourceTest {
     public void testRootPageResourceNewThrowsErrorOnMismatchedUrl() {
         String mismatchedUrl = "http://www.newpage.com";
 
-        RootPage newPage = new RootPage("http://www.a.different.url");
+        Page newPage = createPage("http://www.a.different.url");
         sut.newRootPage(mismatchedUrl, newPage);
     }
 
@@ -111,27 +112,31 @@ public class RootPageResourceTest {
         }
     }
 
-    protected void assertUrlInList(List<RootPage> list, String urlToFind) {
+    protected void assertUrlInList(List<Page> list, String urlToFind) {
         assertTrue(
                 String.format("Expected to find %s in list but did not", urlToFind),
                 findUrlInList(list, urlToFind)
         );
     }
 
-    protected void assertUrlNotInList(List<RootPage> list, String urlToFind) {
+    protected void assertUrlNotInList(List<Page> list, String urlToFind) {
         assertFalse(
                 String.format("Expected %s to not be in list but found it", urlToFind),
                 findUrlInList(list, urlToFind)
         );
     }
 
-    protected boolean findUrlInList(List<RootPage> list, String urlToFind) {
-        for (RootPage rp : list) {
+    protected boolean findUrlInList(List<Page> list, String urlToFind) {
+        for (Page rp : list) {
             if (rp.getUrl().equals(urlToFind)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    protected Page createPage(String url) {
+        return new Page(url, true, null);
     }
 }

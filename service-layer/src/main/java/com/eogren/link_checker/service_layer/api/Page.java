@@ -2,26 +2,48 @@ package com.eogren.link_checker.service_layer.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.URL;
+import org.joda.time.DateTime;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Root Page is a representation of a page to be crawled every 5 minutes.
  */
-public class RootPage {
+public class Page {
     @NotNull
     @URL
     private String url;
 
-    /**
-     * Creates a new RootPage object initialized to defaults.
-     */
-    public RootPage() {
+    private boolean isRoot;
 
+    private CrawlReport lastCrawled;
+
+
+    @JsonProperty
+    public boolean isRoot() {
+        return isRoot;
     }
 
-    public RootPage(String url) {
+    @JsonProperty
+    public CrawlReport getLastCrawled() {
+        return lastCrawled;
+    }
+
+    /**
+     * Creates a new Page object initialized to defaults.
+     */
+    public Page() {
+    }
+
+    public Page(String url,
+                boolean isRoot,
+                CrawlReport lastCrawled
+    ) {
         this.url = url;
+        this.isRoot = isRoot;
+        this.lastCrawled = lastCrawled;
     }
 
     /**
@@ -37,9 +59,9 @@ public class RootPage {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        RootPage rootPage = (RootPage) o;
+        Page page = (Page) o;
 
-        if (url != null ? !url.equals(rootPage.url) : rootPage.url != null) return false;
+        if (url != null ? !url.equals(page.url) : page.url != null) return false;
 
         return true;
     }
