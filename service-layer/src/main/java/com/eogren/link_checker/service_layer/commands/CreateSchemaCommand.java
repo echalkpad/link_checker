@@ -49,6 +49,7 @@ public class CreateSchemaCommand extends ConfiguredCommand<LinkCheckerConfigurat
             executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS crawl_report( " +
                     "url text, " +
                     "date timestamp, " +
+                    "error text, " +
                     "status_code int, " +
                     "links text, " +
                     "PRIMARY KEY (url, date)" +

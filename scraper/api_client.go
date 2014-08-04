@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -12,6 +13,9 @@ import (
 type APIClient interface {
 	// GetRootPages requests the list of root pages to crawl from the server
 	GetRootPages() ([]*url.URL, error)
+
+	// SubmitScrapeResponse submits a ScrapeResponse to the server
+	SubmitScrapeResponse(sr *ScrapeResponse) error
 }
 
 type apiClientImpl struct {
@@ -28,8 +32,9 @@ type rootPage struct {
 type crawlReport struct {
 	URL        string    `json:"url"`
 	StatusCode int       `json:"statusCode"`
-	Links      []Link    `json:"links"`
+	Links      []*Link   `json:"links"`
 	Date       time.Time `json:"date"`
+	Error      string    `json:"error"`
 }
 
 // NewAPIClient creates a new api client using the given baseURL (root location
@@ -74,4 +79,45 @@ func (c *apiClientImpl) GetRootPages() ([]*url.URL, error) {
 		urls = append(urls, url)
 	}
 	return urls, nil
+}
+
+func (c *apiClientImpl) SubmitScrapeResponse(sr *ScrapeResponse) error {
+	reqURL := c.baseURL + "/api/v1/crawl_report"
+
+	report := crawlReportFromScrapeResponse(sr)
+
+	body, err := json.Marshal(report)
+	if err != nil {
+		return err
+	}
+
+	sc, err := c.client.PostURL(reqURL, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	if sc >= 400 {
+		return fmt.Errorf("POST for %s was not success: returned %d", body, sc)
+	}
+
+	return nil
+}
+
+func crawlReportFromScrapeResponse(sr *ScrapeResponse) *crawlReport {
+	resp := crawlReport{
+		URL:        sr.URL.String(),
+		StatusCode: sr.Status,
+		Links:      sr.Links,
+		Date:       sr.Date,
+	}
+
+	if resp.Links == nil {
+		resp.Links = make([]*Link, 0, 1)
+	}
+
+	if sr.Err != nil {
+		resp.Error = fmt.Sprintf("%v", sr.Err)
+	}
+
+	return &resp
 }

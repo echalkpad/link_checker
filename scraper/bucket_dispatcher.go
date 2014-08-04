@@ -97,6 +97,7 @@ func (w *WebProcessor) ProcessRequest(r *ScrapeRequest) {
 
 	body, statusCode, err := w.retriever.GetURL(r.url.String(), 2000000)
 	resp.Status = statusCode
+	resp.Date = time.Now()
 
 	if statusCode < 200 || statusCode > 299 || err != nil {
 		resp.Err = err

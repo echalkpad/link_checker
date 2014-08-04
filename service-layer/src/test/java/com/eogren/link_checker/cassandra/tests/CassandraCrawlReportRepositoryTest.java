@@ -22,13 +22,14 @@ public class CassandraCrawlReportRepositoryTest {
         Session mockSession = mock(Session.class);
         PreparedStatement mockedInsert = mock(PreparedStatement.class);
 
-        when(mockedInsert.bind(any(), any(), any(), any())).thenReturn(null);
+        when(mockedInsert.bind(any(), any(), any(), any(), any())).thenReturn(null);
         when(mockSession.prepare(anyString())).thenReturn(mockedInsert);
 
         CassandraCrawlReportRepository repo = new CassandraCrawlReportRepository(mockSession);
 
         final String url = "http://www.eogren.com";
-        final DateTime when = new DateTime(204, 01, 03, 05, 07);
+        final String error = "";
+        final DateTime when = new DateTime(2004, 01, 03, 05, 07);
         final int status_code = 200;
 
         final List<Link> links = new ArrayList<>();
@@ -40,6 +41,7 @@ public class CassandraCrawlReportRepositoryTest {
         CrawlReport report = new CrawlReport(
             url,
             when,
+            error,
             status_code,
             links
         );
@@ -48,7 +50,8 @@ public class CassandraCrawlReportRepositoryTest {
 
         verify(mockedInsert).bind(
                 url,
-                when,
+                when.toDate(),
+                error,
                 status_code,
                 links_text
         );

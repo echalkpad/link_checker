@@ -44,7 +44,14 @@ func (w *webClientDefault) GetURL(url string, maxLength int64) (r io.Reader, sta
 }
 
 func (w *webClientDefault) PostURL(url string, body io.Reader) (statusCode int, err error) {
-	return 200, nil
+	httpResp, err := w.client.Post(url, "application/json", body)
+	if err != nil {
+		return -1, err
+	}
+
+	defer httpResp.Body.Close()
+
+	return httpResp.StatusCode, err
 }
 
 func readBody(r *http.Response, maxLength int64) ([]byte, error) {

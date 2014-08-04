@@ -14,7 +14,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     public CassandraCrawlReportRepository(Session session) {
         this.session = session;
         insertCrawlReportStatement = session.prepare(
-                "INSERT INTO crawl_report VALUES (url, date, status_code, links) VALUES ?, ?, ?, ?"
+                "INSERT INTO crawl_report (url, date, error, status_code, links) VALUES (?, ?, ?, ?, ?);"
         );
     }
 
@@ -27,7 +27,8 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
 
             BoundStatement bs = insertCrawlReportStatement.bind(
                     report.getUrl(),
-                    report.getDate(),
+                    report.getDate().toDate(),
+                    report.getError(),
                     report.getStatusCode(),
                     json_links
             );

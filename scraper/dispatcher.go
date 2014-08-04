@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"time"
 )
 
 // The Dispatcher is basically a task distributor; it receives requests to scrape various URLs,
@@ -103,6 +104,7 @@ type ScrapeResponse struct {
 	URL   *url.URL
 	Depth int
 
+	Date     time.Time
 	Status   int
 	Err      error
 	Links    []*Link
@@ -111,6 +113,7 @@ type ScrapeResponse struct {
 
 func (r *ScrapeResponse) Dump() {
 	fmt.Printf("Response for: %s\n", r.URL.String())
+	fmt.Printf("Scraped at: %v\n", r.Date)
 	fmt.Printf("Status code: %d\n", r.Status)
 	fmt.Printf("Error: %v\n", r.Err)
 	fmt.Printf("Links:\n")

@@ -42,9 +42,11 @@ func main() {
 		for {
 			select {
 			case resp := <-respChan:
-				// TODO: Report results
-				resp.Dump()
+				log.Printf("Dispatch ScrapeResponse for " + resp.URL.String())
+				go submitWithBackoff(apiClient, resp)
+
 				if resp.Depth > 0 {
+					// XXX: Need to clean out uniqueURLs or else new scrapes will never be scheduled
 					uniqueURLs := make(map[string]bool)
 					for _, l := range resp.Links {
 						uniqueURLs[l.URL] = true
@@ -92,4 +94,22 @@ func main() {
 	}()
 
 	fanout.Start()
+}
+
+func submitWithBackoff(apiClient APIClient, resp ScrapeResponse) {
+	numErrors := 0
+	backoff := 2
+	var err error
+	for numErrors < 3 {
+		err = apiClient.SubmitScrapeResponse(&resp)
+		if err == nil {
+			return
+		}
+
+		numErrors++
+		time.Sleep(time.Duration(backoff) * time.Second)
+		backoff *= backoff
+	}
+
+	log.Printf("Failed to post scrape response! Error %v", err)
 }

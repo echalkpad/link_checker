@@ -20,6 +20,8 @@ public class CrawlReport {
     @NotNull
     private List<Link> links;
 
+    private String error;
+
     public CrawlReport() {
 
     }
@@ -27,11 +29,13 @@ public class CrawlReport {
     public CrawlReport(
             String url,
             DateTime date,
+            String error,
             int statusCode,
             List<Link> links
     ) {
         this.url = url;
         this.date = date;
+        this.error = error;
         this.statusCode = statusCode;
         this.links = links;
     }
@@ -56,4 +60,8 @@ public class CrawlReport {
         return statusCode;
     }
 
+    @JsonProperty
+    public String getError() {
+        return error;
+    }
 }
