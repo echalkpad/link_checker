@@ -35,8 +35,6 @@ func (w *webClientDefault) GetURL(url string, maxLength int64) (r io.Reader, sta
 		return nil, -1, err
 	}
 
-	defer httpResp.Body.Close()
-
 	// We read the entire body into a buffer now to avoid potential problems with timeouts later
 	body, err := readBody(httpResp, maxLength)
 

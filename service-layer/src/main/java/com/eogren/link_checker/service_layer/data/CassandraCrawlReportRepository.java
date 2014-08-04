@@ -1,6 +1,7 @@
 package com.eogren.link_checker.service_layer.data;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.utils.UUIDs;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.Link;
 import com.eogren.link_checker.service_layer.api.Page;
@@ -40,7 +41,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
 
             BoundStatement bs = insertCrawlReportStatement.bind(
                     report.getUrl(),
-                    report.getDate().toDate(),
+                    UUIDs.timeBased(), // XXX this is based on time of POST not on crawlTime
                     report.getError(),
                     report.getStatusCode(),
                     json_links
@@ -75,7 +76,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
 
             return new CrawlReport(
                     r.getString("url"),
-                    new DateTime(r.getDate("date")),
+                    new DateTime(UUIDs.unixTimestamp(r.getUUID("date"))),
                     r.getString("error"),
                     r.getInt("status_code"),
                     links
