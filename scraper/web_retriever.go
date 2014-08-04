@@ -30,7 +30,8 @@ func (w *webClientDefault) SetTimeout(d time.Duration) {
 }
 
 func (w *webClientDefault) GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error) {
-	httpResp, err := w.client.Get(url)
+	client := http.Client{Timeout: 30 * time.Second}
+	httpResp, err := client.Get(url)
 	if err != nil {
 		return nil, -1, err
 	}
