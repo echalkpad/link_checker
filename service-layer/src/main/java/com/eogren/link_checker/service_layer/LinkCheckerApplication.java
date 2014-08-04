@@ -17,6 +17,9 @@ import javax.servlet.FilterRegistration;
 import java.util.EnumSet;
 
 public class LinkCheckerApplication extends Application<LinkCheckerConfiguration> {
+    private RootPageRepository rootPageRepo;
+    private CrawlReportRepository crawlReportRepo;
+
     public static void main(String[] args) throws Exception {
         new LinkCheckerApplication().run(args);
     }
@@ -49,18 +52,32 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
     }
 
     protected RootPageRepository getRootPageRepository(LinkCheckerConfiguration config) throws DatabaseException {
-        if (config.getRepoType().equals("cassandra")) {
-            return new CassandraRootPageRepository(config.getCassandraFactory().getSession());
-        } else {
-            return new InMemoryRootPageRepository();
+        if (rootPageRepo != null) {
+            return rootPageRepo;
         }
+
+        if (config.getRepoType().equals("cassandra")) {
+            rootPageRepo = new CassandraRootPageRepository(
+                    getCrawlReportRepository(config),
+                    config.getCassandraFactory().getSession());
+        } else {
+            rootPageRepo = new InMemoryRootPageRepository();
+        }
+
+        return rootPageRepo;
     }
 
     protected CrawlReportRepository getCrawlReportRepository(LinkCheckerConfiguration config) throws DatabaseException {
+        if (crawlReportRepo != null) {
+            return crawlReportRepo;
+        }
+
         if (config.getRepoType().equals("cassandra")) {
-            return new CassandraCrawlReportRepository(config.getCassandraFactory().getSession());
+            crawlReportRepo = new CassandraCrawlReportRepository(config.getCassandraFactory().getSession());
         } else {
             throw new IllegalArgumentException("only know how to use cassandra for now");
         }
+
+        return crawlReportRepo;
     }
 }

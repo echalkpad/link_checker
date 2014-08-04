@@ -11,4 +11,11 @@ public interface CrawlReportRepository {
      * @param report CrawlReport to add
      */
     public void addCrawlReport(CrawlReport report);
+
+    /**
+     * Retrieve the latest crawl report for a given URL.
+     * @param url URL to retrieve
+     * @return CrawlReport if it exists; null if the URL has not yet been crawled
+     */
+    public CrawlReport getLatestStatus(String url);
 }

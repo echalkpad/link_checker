@@ -5,6 +5,7 @@ import com.datastax.driver.core.Session;
 import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraRootPageRepository;
+import com.eogren.link_checker.service_layer.data.CrawlReportRepository;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class CassandraRootPageRepositoryTest {
     protected String keyspace;
@@ -36,10 +38,12 @@ public class CassandraRootPageRepositoryTest {
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
+        CrawlReportRepository mockCrawlRepo = mock(CrawlReportRepository.class);
+
         CreateSchemaCommand schemaCommand = new CreateSchemaCommand(session);
         schemaCommand.createSchema();
 
-        repo = new CassandraRootPageRepository(session);
+        repo = new CassandraRootPageRepository(mockCrawlRepo, session);
     }
 
     @After
