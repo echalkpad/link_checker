@@ -115,7 +115,7 @@ func (r *ScrapeResponse) Dump() {
 	fmt.Printf("Error: %v\n", r.Err)
 	fmt.Printf("Links:\n")
 	for _, l := range r.Links {
-		fmt.Printf("%s (%s)\n", l.URL, l.anchorText)
+		fmt.Printf("%s (%s)\n", l.URL, l.AnchorText)
 	}
 
 	fmt.Printf("Warnings:\n")

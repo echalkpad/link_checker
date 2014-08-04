@@ -82,8 +82,8 @@ func TestReturnsErrorOnRandomBasePage(t *testing.T) {
 }
 
 func checkLink(t *testing.T, l *Link, expectedHref string, expectedAnchor string) {
-	if l.URL != expectedHref || l.anchorText != expectedAnchor {
+	if l.URL != expectedHref || l.AnchorText != expectedAnchor {
 		t.Errorf("Expected link to be href %s, anchor %s, instead was %s, anchor %s",
-			expectedHref, expectedAnchor, l.URL, l.anchorText)
+			expectedHref, expectedAnchor, l.URL, l.AnchorText)
 	}
 }

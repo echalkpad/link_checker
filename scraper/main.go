@@ -12,7 +12,7 @@ import (
 )
 
 func webProcessFactory() RequestProcessor {
-	return &WebProcessor{retriever: NewWebRetriever(), extractor: NewLinkExtractor()}
+	return &WebProcessor{retriever: NewWebClient(), extractor: NewLinkExtractor()}
 }
 
 func workerFactory() Dispatcher {

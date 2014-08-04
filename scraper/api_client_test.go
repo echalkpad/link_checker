@@ -7,23 +7,27 @@ import (
 	"time"
 )
 
-type mockWebRetriever struct {
+type mockWebClient struct {
 	resp    string
 	sc      int
 	lastURL string
 }
 
-func (r *mockWebRetriever) GetURL(url string, maxLength int64) (io.Reader, int, error) {
+func (r *mockWebClient) GetURL(url string, maxLength int64) (io.Reader, int, error) {
 	r.lastURL = url
 	return strings.NewReader(r.resp), r.sc, nil
 }
 
-func (r *mockWebRetriever) SetTimeout(t time.Duration) {
+func (r *mockWebClient) PostURL(url string, body io.Reader) (int, error) {
+	return 400, nil
+}
+
+func (r *mockWebClient) SetTimeout(t time.Duration) {
 
 }
 
 func TestApiClientCanParseRootPages(t *testing.T) {
-	r := &mockWebRetriever{resp: `[{"url": "http://www.cnn.com"}, {"url": "http://www.nytimes.com"}]`, sc: 200}
+	r := &mockWebClient{resp: `[{"url": "http://www.cnn.com"}, {"url": "http://www.nytimes.com"}]`, sc: 200}
 	c := NewAPIClient("http://unittest", r)
 
 	expectedURL := "http://unittest/api/v1/root_page"

@@ -81,13 +81,14 @@ func (b *BucketDispatcher) drainQueue() {
 // Move this into its own file?
 
 // WebProcessor is the worker that actually processes ScrapeRequests. It relies
-// on the WebRetriever and LinkExtractors that it has been initialized with.
+// on the WebClient and LinkExtractors that it has been initialized with.
 type WebProcessor struct {
-	retriever WebRetriever
+	retriever WebClient
 	extractor LinkExtractor
 }
 
-func NewWebProcessor(r WebRetriever, e LinkExtractor) WebProcessor {
+// NewWebProcessor creates a new WebProcessor.
+func NewWebProcessor(r WebClient, e LinkExtractor) WebProcessor {
 	return WebProcessor{retriever: r, extractor: e}
 }
 

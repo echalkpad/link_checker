@@ -11,8 +11,8 @@ import (
 
 // Link represents a scraped link from a webpage.
 type Link struct {
-	URL        string
-	anchorText string
+	URL        string `json:"url"`
+	AnchorText string `json:"anchorText"`
 }
 
 // LinkExtractor is an interface representing an object that knows how to extract
@@ -88,7 +88,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 				continue
 			}
 
-			pendingLink.anchorText = ""
+			pendingLink.AnchorText = ""
 			state = InsideLink
 		case InsideLink:
 			if tokenType == html.EndTagToken && token.DataAtom == atom.A {
@@ -99,7 +99,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 			}
 
 			if tokenType == html.TextToken {
-				pendingLink.anchorText = (pendingLink.anchorText + token.Data)
+				pendingLink.AnchorText = (pendingLink.AnchorText + token.Data)
 			}
 		}
 

@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-func TestWebRetrieverError(t *testing.T) {
+func TestWebClientError(t *testing.T) {
 	t.Parallel()
 
-	r := NewWebRetriever()
+	r := NewWebClient()
 	r.SetTimeout(1 * time.Millisecond)
 	doneChan := make(chan error)
 	timerChan := time.After(10 * time.Millisecond)
