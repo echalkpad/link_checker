@@ -8,6 +8,11 @@ public class Link {
 
     public Link() {}
 
+    /**
+     * Creates a new Link object with all parameters.
+     * @param url URL the link points to
+     * @param anchorText Anchor text of the link
+     */
     public Link(
         String url,
         String anchorText
@@ -15,6 +20,7 @@ public class Link {
         this.url = url;
         this.anchorText = anchorText;
     }
+
     @JsonProperty
     public String getUrl() {
         return url;

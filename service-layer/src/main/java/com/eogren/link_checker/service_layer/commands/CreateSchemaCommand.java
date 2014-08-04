@@ -37,11 +37,24 @@ public class CreateSchemaCommand extends ConfiguredCommand<LinkCheckerConfigurat
         System.exit(0);
     }
 
+    /**
+     * Create a new Cassandra schema from scratch.
+     * [Eventually this will probably need some form of db migration]
+     */
     public void createSchema() {
         try {
-            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS health_check ( key uuid PRIMARY KEY ) WITH comment='empty, only for checks';");
+            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS meta_data ( key text PRIMARY KEY, value text ) WITH comment='config metadata';");
             executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS root_page( " +
                     "url text PRIMARY KEY );");
+            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS crawl_report( " +
+                    "url text, " +
+                    "date timestamp, " +
+                    "status_code int, " +
+                    "links text, " +
+                    "PRIMARY KEY (url, date)" +
+                    ") WITH CLUSTERING ORDER BY (date DESC);"
+            );
+            executeIgnoreNotExists(session, "INSERT INTO meta_data (key, value) VALUES ('db_version', '1');");
         } catch (QueryValidationException | QueryExecutionException | NoHostAvailableException ex) {
             System.out.println(ex.getMessage());
         }

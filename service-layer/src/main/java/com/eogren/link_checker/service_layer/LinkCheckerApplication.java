@@ -1,11 +1,10 @@
 package com.eogren.link_checker.service_layer;
 
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
-import com.eogren.link_checker.service_layer.data.CassandraRootPageRepository;
-import com.eogren.link_checker.service_layer.data.InMemoryRootPageRepository;
-import com.eogren.link_checker.service_layer.data.RootPageRepository;
+import com.eogren.link_checker.service_layer.data.*;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.health.CassandraHealthCheck;
+import com.eogren.link_checker.service_layer.resources.CrawlReportResource;
 import com.eogren.link_checker.service_layer.resources.RootPageResource;
 
 import io.dropwizard.Application;
@@ -35,6 +34,7 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) throws DatabaseException {
         environment.jersey().register(new RootPageResource(getRootPageRepository(config)));
+        environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config)));
 
         environment.healthChecks().register("cassandra", new CassandraHealthCheck(config.getCassandraFactory()));
 
@@ -53,6 +53,14 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
             return new CassandraRootPageRepository(config.getCassandraFactory().getSession());
         } else {
             return new InMemoryRootPageRepository();
+        }
+    }
+
+    protected CrawlReportRepository getCrawlReportRepository(LinkCheckerConfiguration config) throws DatabaseException {
+        if (config.getRepoType().equals("cassandra")) {
+            return new CassandraCrawlReportRepository(config.getCassandraFactory().getSession());
+        } else {
+            throw new IllegalArgumentException("only know how to use cassandra for now");
         }
     }
 }

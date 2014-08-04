@@ -16,7 +16,11 @@ public class CassandraHealthCheck extends HealthCheck {
     @Override
     protected Result check() throws Exception {
         Session session = config.getSession();
-        session.execute("SELECT * from health_check");
+        ResultSet rs = session.execute("SELECT * from health_check LIMIT 1");
+        if (rs.one() == null) {
+            return Result.unhealthy("Unable to select even one row from health_check");
+        }
+
         return Result.healthy("Able to connect to cassandra");
     }
 }
