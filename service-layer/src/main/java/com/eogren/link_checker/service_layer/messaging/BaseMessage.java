@@ -8,13 +8,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class BaseMessage {
     @JsonProperty
+    protected String type;
+
     public String getType() {
-        return this.getClass().getName();
+        return type;
     }
 
     /**
      * Create a new BaseMessage
      */
     public BaseMessage() {
+        type = this.getClass().getName();
+
     }
 }

@@ -1,18 +1,21 @@
 package com.eogren.link_checker.messaging.tests;
 
 import com.eogren.link_checker.service_layer.messaging.*;
+import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 public class ExchangePublisherIntegrationTest {
     final private String amqpUri = "amqp://localhost";
+    final private Logger logger = Logger.getLogger("testLogger");
 
-    private class TestMessageProcessor extends MessageProcessor {
+    public class TestMessageProcessor extends MessageProcessor {
         public boolean seenMessage = false;
 
         @Override
         public void processBaseMessage(BaseMessage m) {
+            assertEquals("com.eogren.link_checker.service_layer.messaging.BaseMessage", m.getType());
             seenMessage = true;
         }
     }
@@ -40,10 +43,8 @@ public class ExchangePublisherIntegrationTest {
     public void testCanReceiveMessage() throws ConnectionException {
         final String myExchange = "test-exchange";
 
-
-
         ExchangePublisher pub = new ExchangePublisher(amqpUri, myExchange);
-        ExchangeReader reader = new ExchangeReader(amqpUri, myExchange);
+        ExchangeReader reader = new ExchangeReader(logger, amqpUri, myExchange);
 
         try {
             TestMessageProcessor tmp = new TestMessageProcessor();
