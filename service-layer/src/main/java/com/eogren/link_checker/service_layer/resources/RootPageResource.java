@@ -8,7 +8,7 @@ import com.eogren.link_checker.service_layer.data.RootPageRepository;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 import java.util.List;
 
 @Path("/api/v1/root_page/")
@@ -33,8 +33,26 @@ public class RootPageResource {
      * Return a list of all RootPages in the system.
      * TODO: Pagination
      */
-    public List<Page> getListing() {
-        return repository.getAllRootPages();
+    public Response getListing(@Context Request request) {
+        // TODO: Need better caching too; this should stop the client from getting a bunch of data
+        // when the ETag hasn't changed, but the server is still doing all the work to calculate it
+        // in the first place.
+        List<Page> body = repository.getAllRootPages();
+
+        EntityTag etag = new EntityTag(String.valueOf(body.hashCode()));
+
+        CacheControl cc = new CacheControl();
+        cc.setMaxAge(0);
+        cc.setMustRevalidate(true);
+        cc.setPrivate(true);
+
+        Response.ResponseBuilder rb = request.evaluatePreconditions(etag);
+        System.out.println("Rb is " + rb);
+        if (rb != null) {
+            return rb.cacheControl(cc).build();
+        } else {
+            return Response.ok(body).cacheControl(cc).tag(etag).build();
+        }
     }
 
     @PUT

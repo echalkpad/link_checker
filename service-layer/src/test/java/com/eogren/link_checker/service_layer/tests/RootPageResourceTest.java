@@ -9,11 +9,14 @@ import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class RootPageResourceTest {
     private class MockRootPageRepository implements RootPageRepository {
@@ -64,11 +67,15 @@ public class RootPageResourceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testRootPageResourceSummaryReturnsUrls() {
-        List<Page> from_sut = sut.getListing();
+        Request mockRequest = mock(Request.class);
+        when(mockRequest.evaluatePreconditions()).thenReturn(null);
 
+        Response from_sut = sut.getListing(mockRequest);
+        List<Page> sut_urls = (List<Page>) from_sut.getEntity();
         for (String url : initialUrls) {
-            assertUrlInList(from_sut, url);
+            assertUrlInList(sut_urls, url);
         }
     }
 
