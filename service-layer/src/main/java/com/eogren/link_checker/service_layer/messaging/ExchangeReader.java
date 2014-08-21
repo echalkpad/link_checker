@@ -162,7 +162,7 @@ public class ExchangeReader extends ExchangeMessageHandler {
 
         protected Object deserializeMessage(Envelope envelope, byte[] body) throws InvalidMessageException {
             try {
-                Class clz = Class.forName(envelope.getRoutingKey());
+                Class<?> clz = Class.forName(envelope.getRoutingKey());
 
                 logger.debug(String.format("Trying to deserialize into %s", clz.toString()));
                 ObjectMapper om = new ObjectMapper();
@@ -174,8 +174,8 @@ public class ExchangeReader extends ExchangeMessageHandler {
         }
 
         protected void dispatchToProcessor(Object message) throws InvalidMessageException {
-            Class msgClass = message.getClass();
-            Class processorClass = processor.getClass();
+            Class<?> msgClass = message.getClass();
+            Class<?> processorClass = processor.getClass();
 
             Method processorMethod;
 
