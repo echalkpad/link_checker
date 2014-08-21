@@ -47,7 +47,6 @@ public class RootPageResource {
         cc.setPrivate(true);
 
         Response.ResponseBuilder rb = request.evaluatePreconditions(etag);
-        System.out.println("Rb is " + rb);
         if (rb != null) {
             return rb.cacheControl(cc).build();
         } else {
