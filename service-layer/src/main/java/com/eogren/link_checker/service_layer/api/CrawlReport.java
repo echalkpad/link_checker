@@ -26,6 +26,14 @@ public class CrawlReport {
 
     }
 
+    /**
+     * Create a new crawl report.
+     * @param url URL for report
+     * @param date Date crawled
+     * @param error Error (null if none)
+     * @param statusCode HTTP status code (or -1 if network error)
+     * @param links Set of links found on the page
+     */
     public CrawlReport(
             String url,
             DateTime date,

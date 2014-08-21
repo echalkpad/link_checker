@@ -10,6 +10,7 @@ import com.eogren.link_checker.service_layer.api.Page;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 public class CassandraRootPageRepository implements RootPageRepository {
@@ -31,8 +32,9 @@ public class CassandraRootPageRepository implements RootPageRepository {
         }
 
         public Page call() {
-            CrawlReport latestReportDetails = crawlReportRepo.getLatestStatus(url);
-            return new Page(url, true, latestReportDetails);
+            Optional<CrawlReport> latestReportDetails = crawlReportRepo.getLatestStatus(url);
+
+            return new Page(url, true, latestReportDetails.orElse(null));
         }
     }
 

@@ -1,25 +1,26 @@
 package com.eogren.link_checker.service_layer.data;
 
+import com.codahale.metrics.annotation.Timed;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.utils.UUIDs;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.Link;
-import com.eogren.link_checker.service_layer.api.Page;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private final Session session;
 
     private final PreparedStatement insertCrawlReportStatement;
     private final PreparedStatement findLatestStatement;
+    private final PreparedStatement findByUuidStatement;
 
     public CassandraCrawlReportRepository(Session session) {
         this.session = session;
@@ -30,18 +31,25 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         findLatestStatement = session.prepare(
                 "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? ORDER BY date DESC LIMIT 1"
         );
+
+        findByUuidStatement = session.prepare(
+                "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? AND date = ?"
+        );
     }
 
     @Override
-    public void addCrawlReport(CrawlReport report) {
+    @Timed
+    public String addCrawlReport(CrawlReport report) {
         ObjectMapper mapper = new ObjectMapper();
+
+        UUID uuid = UUIDs.timeBased();
 
         try {
             String json_links = mapper.writeValueAsString(report.getLinks());
 
             BoundStatement bs = insertCrawlReportStatement.bind(
                     report.getUrl(),
-                    UUIDs.timeBased(), // XXX this is based on time of POST not on crawlTime
+                    uuid, // XXX this is based on time of POST not on crawlTime, but probably ok
                     report.getError(),
                     report.getStatusCode(),
                     json_links
@@ -51,19 +59,36 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        return uuid.toString();
     }
 
     @Override
-    public CrawlReport getLatestStatus(String url) {
+    @Timed
+    public Optional<CrawlReport> getLatestStatus(String url) {
         BoundStatement bs = findLatestStatement.bind(url);
+        return getOneCrawlReport(bs);
+    }
+
+
+    @Override
+    @Timed
+    public Optional<CrawlReport> getByUuid(String url, String uuidString) {
+        UUID uuid = UUID.fromString(uuidString);
+
+        BoundStatement bs = findByUuidStatement.bind(url, uuid);
+        return getOneCrawlReport(bs);
+    }
+
+    private Optional<CrawlReport> getOneCrawlReport(BoundStatement bs) {
         ResultSet rs = session.execute(bs);
 
         Row r = rs.one();
         if (r == null) {
-            return null;
+            return Optional.empty();
         }
 
-        return deserializeCrawlReport(r);
+        return Optional.of(deserializeCrawlReport(r));
     }
 
     protected CrawlReport deserializeCrawlReport(Row r) {

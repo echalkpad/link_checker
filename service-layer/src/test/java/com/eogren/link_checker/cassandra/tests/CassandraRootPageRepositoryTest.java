@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -39,6 +40,7 @@ public class CassandraRootPageRepositoryTest {
         session.execute("USE " + keyspace + ";");
 
         CrawlReportRepository mockCrawlRepo = mock(CrawlReportRepository.class);
+        when(mockCrawlRepo.getLatestStatus(anyString())).thenReturn(Optional.empty());
 
         CreateSchemaCommand schemaCommand = new CreateSchemaCommand(session);
         schemaCommand.createSchema();
