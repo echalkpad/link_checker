@@ -25,42 +25,39 @@ public class ExchangeReader extends ExchangeMessageHandler {
      * Create an ExchangeReader pointing at the given exchange. This version of
      * the constructor will automatically create a queue that RabbitMQ will auto-delete
      * when the client terminates.
-     * @param logger Logger to send any messages to
      * @param amqpUri URI to connect to
      * @param exchangeName Exchange to bind the queue to
      */
-    public ExchangeReader(Logger logger, String amqpUri, String exchangeName) throws ConnectionException {
-        this(logger, amqpUri, exchangeName, null);
+    public ExchangeReader(String amqpUri, String exchangeName) throws ConnectionException {
+        this(amqpUri, exchangeName, null);
     }
 
     /**
      * Create an ExchangeReader pointing at the given queue. The queue
      * created by this version of the constructor will be bound to the exchange
      * but NOT auto-deleted when the client goes away. The routing key for the queue will be "#".
-     * @param logger Logger to send any messages to
      * @param amqpUri URI to connect to
      * @param exchangeName Exchange to bind the queue to
      * @param queueName Queue name to create
      */
-    public ExchangeReader(Logger logger, String amqpUri, String exchangeName, String queueName) throws ConnectionException {
-        this(logger, amqpUri, exchangeName, queueName, "#");
+    public ExchangeReader(String amqpUri, String exchangeName, String queueName) throws ConnectionException {
+        this(amqpUri, exchangeName, queueName, "#");
     }
 
     /**
      * Create an ExchangeReader pointing at the given queue with the given routing key.
-     * @param logger Logger to send any messages to
      * @param amqpUri URI to connect to
      * @param exchangeName Exchange to bind the queue to
      * @param queueName Queue name to create
      * @param routingKey Routing key for the queue binding
      * @throws ConnectionException If the connection cannot be established
      */
-    public ExchangeReader(Logger logger, String amqpUri, String exchangeName, String queueName, String routingKey) throws ConnectionException {
+    public ExchangeReader(String amqpUri, String exchangeName, String queueName, String routingKey) throws ConnectionException {
         super(amqpUri, exchangeName);
 
         this.routingKey = routingKey;
         this.requestedQueueName = queueName;
-        this.logger = logger;
+        this.logger = Logger.getLogger(this.getClass());
 
         registerQueue();
     }
@@ -75,6 +72,7 @@ public class ExchangeReader extends ExchangeMessageHandler {
         Channel chan = getChannel();
 
         try {
+            logger.debug("Starting consume");
             chan.basicConsume(
                     actualQueueName,
                     false,
@@ -88,6 +86,7 @@ public class ExchangeReader extends ExchangeMessageHandler {
     @Override
     public void shutdown() {
         try {
+            logger.debug("Shutting down");
             if (consumeTag != null) {
                 getChannel().basicCancel(consumeTag);
             }
@@ -121,6 +120,7 @@ public class ExchangeReader extends ExchangeMessageHandler {
                 chan.queueDeclare(actualQueueName, true, false, false, null);
             }
 
+            logger.debug(String.format("Binding queue %s to exchange %s with key %s", actualQueueName, exchangeName, routingKey));
             chan.queueBind(actualQueueName, exchangeName, routingKey);
         } catch (IOException e) {
             throw new ConnectionException("IO Error: " + e.getMessage(), e);
@@ -164,6 +164,7 @@ public class ExchangeReader extends ExchangeMessageHandler {
             try {
                 Class clz = Class.forName(envelope.getRoutingKey());
 
+                logger.debug(String.format("Trying to deserialize into %s", clz.toString()));
                 ObjectMapper om = new ObjectMapper();
 
                 return om.readValue(body, clz);
@@ -182,9 +183,9 @@ public class ExchangeReader extends ExchangeMessageHandler {
                 processorMethod = processorClass.getMethod("process", msgClass);
             } catch (NoSuchMethodException e) {
                 try {
-                    processorMethod = processorClass.getMethod("processBaseMessage", BaseMessage.class);
+                    processorMethod = processorClass.getMethod("processUnknownMessage", BaseMessage.class);
                 } catch (NoSuchMethodException e2) {
-                    throw new RuntimeException("Something weird happening - could not resolve BaseMessage::processBaseMessage");
+                    throw new RuntimeException("Something weird happening - could not resolve BaseMessage::processUnknownMessage");
                 }
                 msgClass = BaseMessage.class;
             }

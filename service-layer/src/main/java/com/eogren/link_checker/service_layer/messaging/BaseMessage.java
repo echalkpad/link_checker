@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Basic message with no other properties. Intended to be subclassed
  * for actual serialization/deserialization.
+ *
+ * Note that anything that extends BaseMessage must declare a constructor with no parameters
+ * in order for Jackson de-serialization to work.
  */
 public class BaseMessage {
     @JsonProperty
