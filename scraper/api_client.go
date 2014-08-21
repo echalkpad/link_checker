@@ -49,7 +49,7 @@ func NewAPIClient(baseURL string, client WebClient) APIClient {
 }
 
 func (c *apiClientImpl) GetRootPages() ([]*url.URL, error) {
-	reqURL := c.baseURL + "/api/v1/root_page"
+	reqURL := c.baseURL + "/api/v1/monitored_page"
 
 	r, sc, err := c.client.GetURL(reqURL, 5000000)
 	if err != nil {

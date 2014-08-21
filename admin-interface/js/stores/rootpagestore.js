@@ -4,7 +4,7 @@ var EventEmitter = require('events').EventEmitter;
 var merge = require('react/lib/merge');
 
 var CHANGE_EVENT = 'change';
-var endpoint = '/api/v1/root_page';
+var endpoint = '/api/v1/monitored_page';
 var timer;
 var updateInterval = 10000;
 
@@ -22,7 +22,11 @@ var updateModelFromAjax = function(data) {
 var retrievePages = function() {
     $.ajax(
         config.baseURL + endpoint,
-        {cache: false, dataType: 'json'}
+        {
+            cache: true,
+            dataType: 'json',
+            ifModified: true
+        }
     ).done(updateModelFromAjax)
      .fail(function () {
         // TODO: eventually emit failure event for ui?

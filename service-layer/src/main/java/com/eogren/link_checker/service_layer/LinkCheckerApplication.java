@@ -5,7 +5,7 @@ import com.eogren.link_checker.service_layer.data.*;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.health.CassandraHealthCheck;
 import com.eogren.link_checker.service_layer.resources.CrawlReportResource;
-import com.eogren.link_checker.service_layer.resources.RootPageResource;
+import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
 
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
@@ -36,7 +36,7 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
 
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) throws DatabaseException {
-        environment.jersey().register(new RootPageResource(getRootPageRepository(config)));
+        environment.jersey().register(new MonitoredPageResource(getRootPageRepository(config)));
         environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config)));
 
         environment.healthChecks().register("cassandra", new CassandraHealthCheck(config.getCassandraFactory()));

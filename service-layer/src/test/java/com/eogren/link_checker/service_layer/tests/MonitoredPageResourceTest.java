@@ -3,9 +3,8 @@ package com.eogren.link_checker.service_layer.tests;
 import com.eogren.link_checker.service_layer.api.APIStatusException;
 import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.data.RootPageRepository;
-import com.eogren.link_checker.service_layer.resources.RootPageResource;
+import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
 
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class RootPageResourceTest {
+public class MonitoredPageResourceTest {
     private class MockRootPageRepository implements RootPageRepository {
         private List<Page> pages;
 
@@ -52,7 +51,7 @@ public class RootPageResourceTest {
 
     }
 
-    private RootPageResource sut;
+    private MonitoredPageResource sut;
     private MockRootPageRepository repository;
     private String[] initialUrls;
 
@@ -63,7 +62,7 @@ public class RootPageResourceTest {
                 "http://www.nytimes.com"
         };
         repository = new MockRootPageRepository(initialUrls);
-        sut = new RootPageResource(repository);
+        sut = new MonitoredPageResource(repository);
     }
 
     @Test

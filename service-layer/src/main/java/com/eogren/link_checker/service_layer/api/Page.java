@@ -2,11 +2,8 @@ package com.eogren.link_checker.service_layer.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.URL;
-import org.joda.time.DateTime;
 
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Root Page is a representation of a page to be crawled every 5 minutes.
@@ -16,14 +13,14 @@ public class Page {
     @URL
     private String url;
 
-    private boolean isRoot;
+    private boolean isMonitored;
 
     private CrawlReport lastCrawled;
 
 
     @JsonProperty
-    public boolean isRoot() {
-        return isRoot;
+    public boolean isMonitored() {
+        return isMonitored;
     }
 
     @JsonProperty
@@ -38,11 +35,11 @@ public class Page {
     }
 
     public Page(String url,
-                boolean isRoot,
+                boolean isMonitored,
                 CrawlReport lastCrawled
     ) {
         this.url = url;
-        this.isRoot = isRoot;
+        this.isMonitored = isMonitored;
         this.lastCrawled = lastCrawled;
     }
 

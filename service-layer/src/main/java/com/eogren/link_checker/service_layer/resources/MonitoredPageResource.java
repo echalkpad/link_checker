@@ -11,19 +11,19 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.util.List;
 
-@Path("/api/v1/root_page/")
+@Path("/api/v1/monitored_page/")
 @Produces(MediaType.APPLICATION_JSON)
 /**
  * RootPageResource represents the API calls necessary to deal with RootPages.
  */
-public class RootPageResource {
+public class MonitoredPageResource {
     private final RootPageRepository repository;
 
     /**
      * Create a RootPageResource handler that will use the given repository.
      * @param repository Repository that stores/retrieves information about Root Pages.
      */
-    public RootPageResource(RootPageRepository repository) {
+    public MonitoredPageResource(RootPageRepository repository) {
         this.repository = repository;
     }
 

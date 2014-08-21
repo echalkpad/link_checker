@@ -40,7 +40,7 @@ func TestApiClientCanParseRootPages(t *testing.T) {
 	r := &mockWebClient{resp: `[{"url": "http://www.cnn.com"}, {"url": "http://www.nytimes.com"}]`, sc: 200}
 	c := NewAPIClient("http://unittest", r)
 
-	expectedURL := "http://unittest/api/v1/root_page"
+	expectedURL := "http://unittest/api/v1/monitored_page"
 	expectedLinks := make(map[string]bool)
 	expectedLinks["http://www.cnn.com"] = true
 	expectedLinks["http://www.nytimes.com"] = true
