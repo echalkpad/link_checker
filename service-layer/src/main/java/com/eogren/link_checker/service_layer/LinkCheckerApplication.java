@@ -17,7 +17,7 @@ import javax.servlet.FilterRegistration;
 import java.util.EnumSet;
 
 public class LinkCheckerApplication extends Application<LinkCheckerConfiguration> {
-    private RootPageRepository rootPageRepo;
+    private MonitoredPageRepository monitoredPageRepo;
     private CrawlReportRepository crawlReportRepo;
 
     public static void main(String[] args) throws Exception {
@@ -36,7 +36,7 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
 
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) throws DatabaseException {
-        environment.jersey().register(new MonitoredPageResource(getRootPageRepository(config)));
+        environment.jersey().register(new MonitoredPageResource(getMonitoredPageRepository(config)));
         environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config)));
 
         environment.healthChecks().register("cassandra", new CassandraHealthCheck(config.getCassandraFactory()));
@@ -51,20 +51,19 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
         cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
     }
 
-    protected RootPageRepository getRootPageRepository(LinkCheckerConfiguration config) throws DatabaseException {
-        if (rootPageRepo != null) {
-            return rootPageRepo;
+    protected MonitoredPageRepository getMonitoredPageRepository(LinkCheckerConfiguration config) throws DatabaseException {
+        if (monitoredPageRepo != null) {
+            return monitoredPageRepo;
         }
 
         if (config.getRepoType().equals("cassandra")) {
-            rootPageRepo = new CassandraRootPageRepository(
-                    getCrawlReportRepository(config),
+            monitoredPageRepo = new CassandraMonitoredPageRepository(
                     config.getCassandraFactory().getSession());
         } else {
-            rootPageRepo = new InMemoryRootPageRepository();
+            monitoredPageRepo = new InMemoryMonitoredPageRepository();
         }
 
-        return rootPageRepo;
+        return monitoredPageRepo;
     }
 
     protected CrawlReportRepository getCrawlReportRepository(LinkCheckerConfiguration config) throws DatabaseException {

@@ -15,7 +15,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class RootPageTest {
+public class MonitoredPageTest {
 
     private static Validator validator;
 
@@ -34,6 +34,6 @@ public class RootPageTest {
     }
 
     protected Page createPage(String url) {
-        return new Page(url, true, null);
+        return new Page(url, true);
     }
 }

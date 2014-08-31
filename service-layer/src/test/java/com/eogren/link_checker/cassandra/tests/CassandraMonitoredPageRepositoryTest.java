@@ -2,26 +2,23 @@ package com.eogren.link_checker.cassandra.tests;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
-import com.eogren.link_checker.service_layer.data.CassandraRootPageRepository;
-import com.eogren.link_checker.service_layer.data.CrawlReportRepository;
+import com.eogren.link_checker.service_layer.data.CassandraMonitoredPageRepository;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
-public class CassandraRootPageRepositoryTest {
+public class CassandraMonitoredPageRepositoryTest {
     protected String keyspace;
     protected Session session;
-    protected CassandraRootPageRepository repo;
+    protected CassandraMonitoredPageRepository repo;
 
     @Before
     public void setUp() {
@@ -39,13 +36,10 @@ public class CassandraRootPageRepositoryTest {
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
-        CrawlReportRepository mockCrawlRepo = mock(CrawlReportRepository.class);
-        when(mockCrawlRepo.getLatestStatus(anyString())).thenReturn(Optional.empty());
-
         CreateSchemaCommand schemaCommand = new CreateSchemaCommand(session);
         schemaCommand.createSchema();
 
-        repo = new CassandraRootPageRepository(mockCrawlRepo, session);
+        repo = new CassandraMonitoredPageRepository(session);
     }
 
     @After
@@ -57,26 +51,30 @@ public class CassandraRootPageRepositoryTest {
 
     @Test
     public void testBlankRepoHasNoPage() {
-        List<Page> all_pages = repo.getAllRootPages();
+        List<MonitoredPage> all_pages = repo.getAllMonitoredPages();
         assertEquals("Expected all_pages to be empty", 0, all_pages.size());
     }
 
     @Test
     public void testExistsNoPages() {
-        assertFalse("Expected dummy page not to exist", repo.pageExists("http://www.notadded.com"));
+        assertFalse("Expected dummy page not to exist", repo.pageAlreadyMonitored("http://www.notadded.com"));
     }
 
     @Test
     public void testCanAdd() {
         final String pageUrl = "http://www.eogren.com";
 
-        Page p = new Page(pageUrl, true, null);
-        repo.addPage(p);
+        MonitoredPage p = createMonitoredPage(pageUrl);
+        repo.addMonitoredPage(p);
 
-        assertTrue("Expected page " + pageUrl + " to exist", repo.pageExists(pageUrl));
+        assertTrue("Expected page " + pageUrl + " to exist", repo.pageAlreadyMonitored(pageUrl));
 
-        List<Page> all_pages = repo.getAllRootPages();
+        List<MonitoredPage> all_pages = repo.getAllMonitoredPages();
         assertEquals("Expected all_pages to have 1 element", 1, all_pages.size());
         assertEquals("Expected all_pages[0] to have url " + pageUrl, pageUrl, all_pages.get(0).getUrl());
+    }
+
+    private MonitoredPage createMonitoredPage(String pageUrl) {
+        return new MonitoredPage(pageUrl);
     }
 }

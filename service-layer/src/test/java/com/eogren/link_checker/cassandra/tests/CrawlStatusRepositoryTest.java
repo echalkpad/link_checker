@@ -5,8 +5,6 @@ import com.datastax.driver.core.Session;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraCrawlReportRepository;
-import com.eogren.link_checker.service_layer.data.CassandraRootPageRepository;
-import com.eogren.link_checker.service_layer.data.CrawlReportRepository;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.junit.After;
@@ -14,7 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;

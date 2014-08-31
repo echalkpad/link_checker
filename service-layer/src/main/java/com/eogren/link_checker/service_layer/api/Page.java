@@ -16,10 +16,24 @@ public class Page {
     private boolean isMonitored;
 
     private CrawlReport lastCrawled;
+    private LinkStatus linkStatus;
 
+    /**
+     * Overall status for a monitored page.
+     *
+     * BROKEN_LINKS: Some broken links have been detected on the page.
+     * NOT_FULLY_CRAWLED: No broken links have been detected, but not all of the links have
+     * been crawled yet.
+     * NO_BROKEN_LINKS: All is well with the page.
+     */
+    public enum LinkStatus {
+        BROKEN_LINKS,
+        NOT_FULLY_CRAWLED,
+        NO_BROKEN_LINKS
+    };
 
     @JsonProperty
-    public boolean isMonitored() {
+    public boolean getIsMonitored() {
         return isMonitored;
     }
 
@@ -28,19 +42,35 @@ public class Page {
         return lastCrawled;
     }
 
+    @JsonProperty
+    public String getLinkStatus() {
+        return linkStatus.toString();
+    }
+
+    @JsonProperty
+    public void setLinkStatus(String linkStatus) {
+        this.linkStatus = LinkStatus.valueOf(linkStatus);
+    }
+
     /**
      * Creates a new Page object initialized to defaults.
      */
     public Page() {
     }
 
+    /**
+     * Create a new Page object from scratch. This version takes
+     * the variables that are not set by the system.
+     * @param url URL of Page
+     * @param isMonitored Is this page monitored?
+     */
     public Page(String url,
-                boolean isMonitored,
-                CrawlReport lastCrawled
+                boolean isMonitored
     ) {
         this.url = url;
         this.isMonitored = isMonitored;
-        this.lastCrawled = lastCrawled;
+
+        this.linkStatus = LinkStatus.NOT_FULLY_CRAWLED;
     }
 
     /**

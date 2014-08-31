@@ -1,8 +1,10 @@
 package com.eogren.link_checker.service_layer.tests;
 
 import com.eogren.link_checker.service_layer.api.APIStatusException;
+import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.api.Page;
-import com.eogren.link_checker.service_layer.data.RootPageRepository;
+import com.eogren.link_checker.service_layer.data.InMemoryMonitoredPageRepository;
+import com.eogren.link_checker.service_layer.data.MonitoredPageRepository;
 import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
 
 import org.junit.Before;
@@ -10,49 +12,15 @@ import org.junit.Test;
 
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class MonitoredPageResourceTest {
-    private class MockRootPageRepository implements RootPageRepository {
-        private List<Page> pages;
 
-        public MockRootPageRepository(String[] urls) {
-            pages = new ArrayList<>();
-
-            for (String url : urls) {
-                addPage(createPage(url));
-            }
-        }
-
-        @Override
-        public List<Page> getAllRootPages() {
-            return pages;
-        }
-
-        @Override
-        public void addPage(Page page) {
-            pages.add(page);
-        }
-
-        @Override
-        public boolean pageExists(String url) {
-            return pages.stream().anyMatch(rp -> rp.getUrl().equals(url));
-        }
-
-        @Override
-        public void deletePage(String url) {
-            pages = pages.stream().filter(rp -> !rp.getUrl().equals(url)).collect(Collectors.toList());
-        }
-
-    }
-
+    private MonitoredPageRepository repo;
     private MonitoredPageResource sut;
-    private MockRootPageRepository repository;
     private String[] initialUrls;
 
     @Before
@@ -61,8 +29,9 @@ public class MonitoredPageResourceTest {
                 "http://www.cnn.com",
                 "http://www.nytimes.com"
         };
-        repository = new MockRootPageRepository(initialUrls);
-        sut = new MonitoredPageResource(repository);
+
+        repo = new InMemoryMonitoredPageRepository();
+        sut = new MonitoredPageResource(repo);
     }
 
     @Test
@@ -70,40 +39,49 @@ public class MonitoredPageResourceTest {
     public void testRootPageResourceSummaryReturnsUrls() {
         Request mockRequest = mock(Request.class);
         when(mockRequest.evaluatePreconditions()).thenReturn(null);
+        for (String url : initialUrls) {
+            repo.addMonitoredPage(createMonitoredPage(url));
+        }
 
         Response from_sut = sut.getListing(mockRequest);
-        List<Page> sut_urls = (List<Page>) from_sut.getEntity();
+        List<MonitoredPage> sut_urls = (List<MonitoredPage>) from_sut.getEntity();
         for (String url : initialUrls) {
             assertUrlInList(sut_urls, url);
         }
     }
 
+
     @Test
     public void testRootPageResourceNewAddsANewUrl() {
         String newPageUrl = "http://www.newpage.com";
 
-        Page newPage = createPage(newPageUrl);
+        MonitoredPage newPage = createMonitoredPage(newPageUrl);
 
-        sut.newRootPage(newPage.getUrl(), newPage);
+        sut.newMonitoredPage(newPage.getUrl(), newPage);
 
-        List<Page> allPages = repository.getAllRootPages();
+        List<MonitoredPage> allPages = repo.getAllMonitoredPages();
         assertUrlInList(allPages, newPageUrl);
     }
 
     @Test(expected = APIStatusException.class)
     public void testRootPageResourceNewThrowsErrorOnMismatchedUrl() {
+
         String mismatchedUrl = "http://www.newpage.com";
 
-        Page newPage = createPage("http://www.a.different.url");
-        sut.newRootPage(mismatchedUrl, newPage);
+        MonitoredPage newPage = createMonitoredPage("http://www.a.different.url");
+        sut.newMonitoredPage(mismatchedUrl, newPage);
     }
 
     @Test
     public void testRootPageResourceDeletesANewUrl() {
-        String urlToDelete = "http://www.nytimes.com";
+        for (String url : initialUrls) {
+            repo.addMonitoredPage(createMonitoredPage(url));
+        }
+
+        String urlToDelete = initialUrls[0];
 
         sut.deleteRootPage(urlToDelete);
-        assertUrlNotInList(repository.getAllRootPages(), urlToDelete);
+        assertUrlNotInList(repo.getAllMonitoredPages(), urlToDelete);
     }
 
     @Test
@@ -118,22 +96,22 @@ public class MonitoredPageResourceTest {
         }
     }
 
-    protected void assertUrlInList(List<Page> list, String urlToFind) {
+    protected void assertUrlInList(List<MonitoredPage> list, String urlToFind) {
         assertTrue(
                 String.format("Expected to find %s in list but did not", urlToFind),
                 findUrlInList(list, urlToFind)
         );
     }
 
-    protected void assertUrlNotInList(List<Page> list, String urlToFind) {
+    protected void assertUrlNotInList(List<MonitoredPage> list, String urlToFind) {
         assertFalse(
                 String.format("Expected %s to not be in list but found it", urlToFind),
                 findUrlInList(list, urlToFind)
         );
     }
 
-    protected boolean findUrlInList(List<Page> list, String urlToFind) {
-        for (Page rp : list) {
+    protected boolean findUrlInList(List<MonitoredPage> list, String urlToFind) {
+        for (MonitoredPage rp : list) {
             if (rp.getUrl().equals(urlToFind)) {
                 return true;
             }
@@ -142,7 +120,7 @@ public class MonitoredPageResourceTest {
         return false;
     }
 
-    protected Page createPage(String url) {
-        return new Page(url, true, null);
+    private MonitoredPage createMonitoredPage(String url) {
+        return new MonitoredPage(url);
     }
 }

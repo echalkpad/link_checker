@@ -27,7 +27,8 @@ in Cassandra.
  is just for performance reasons - since many crawl reports come in at once for a monitored page, we don't want
  to constantly recalculate the status.
  
-* Eventually a process should consume overall stauts changes and email users.
+* Eventually a process should consume overall status changes and email users when monitored pages end up with broken
+links or the broken links are fixed.
 
 ## Endpoints
 
