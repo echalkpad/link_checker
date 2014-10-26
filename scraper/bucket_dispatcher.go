@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 )
 
@@ -68,6 +69,10 @@ func (b *BucketDispatcher) drainQueue() {
 		go p.ProcessRequest(req)
 		b.queue = b.queue[1:]
 		b.tokens--
+	}
+
+	if len(b.queue) > 0 {
+		log.Printf("After drainQueue, %d items waiting for a timer to fire", len(b.queue))
 	}
 
 	// GC queue since the slice could grow without bound

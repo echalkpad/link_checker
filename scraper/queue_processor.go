@@ -20,40 +20,56 @@ type MessageProcessor interface {
 }
 
 type defaultQueueProcessor struct {
-	quitc     chan bool
-	reqc      chan interface{}
-	processor MessageProcessor
-	wg        sync.WaitGroup
+	quitc      chan bool
+	reqc       chan interface{}
+	processor  MessageProcessor
+	numWorkers int
+	wg         sync.WaitGroup
 }
 
+// NewQueueProcessor creates a new QueueProcessor with 1 worker.
 func NewQueueProcessor(p MessageProcessor) QueueProcessor {
+	return NewQueueProcessorWithWorkers(p, 1)
+}
+
+// NewQueueProcessorWithWorkers creates a new QueueProcessor with the given number of workers.
+func NewQueueProcessorWithWorkers(p MessageProcessor, numWorkers int) QueueProcessor {
+	if numWorkers <= 0 {
+		panic("NewQueueProcessorWithWorkers: worker count must be at least 1")
+	}
+
 	return &defaultQueueProcessor{
-		quitc:     make(chan bool),
-		reqc:      make(chan interface{}, 20),
-		processor: p,
+		quitc:      make(chan bool),
+		reqc:       make(chan interface{}, 20),
+		processor:  p,
+		numWorkers: numWorkers,
 	}
 }
 
 // Start starts the QueueProcessor. This function blocks so should probably be called from its own goroutine.
 func (r *defaultQueueProcessor) Start() {
-	r.wg.Add(1)
-	go func() {
-		for {
-			select {
-			case <-r.quitc:
-				r.wg.Done()
-				return
-			case req := <-r.reqc:
-				r.processor.Process(req)
+	r.wg.Add(r.numWorkers)
+	for i := 0; i < r.numWorkers; i++ {
+		go func() {
+			for {
+				select {
+				case <-r.quitc:
+					r.wg.Done()
+					return
+				case req := <-r.reqc:
+					r.processor.Process(req)
+				}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 // Stop stops the QueueProcessor.
 func (r *defaultQueueProcessor) Stop() {
-	r.quitc <- true
-	r.wg.Wait()
+	close(r.quitc)
+	for i := 0; i < r.numWorkers; i++ {
+		r.wg.Wait()
+	}
 }
 
 func (r *defaultQueueProcessor) Process(msg interface{}) {

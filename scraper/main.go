@@ -35,6 +35,9 @@ func main() {
 
 	respChan := make(chan ScrapeResponse)
 	apiClient := NewAPIClient("http://localhost:8080", nil)
+	respSender := NewQueueProcessorWithWorkers(NewResponseSender(apiClient), 10)
+
+	respSender.Start()
 
 	var timer = time.After(1 * time.Millisecond)
 
@@ -43,7 +46,7 @@ func main() {
 			select {
 			case resp := <-respChan:
 				log.Printf("Dispatch ScrapeResponse for " + resp.URL.String())
-				go submitWithBackoff(apiClient, resp)
+				respSender.Process(resp)
 
 				if resp.Depth > 0 {
 					// XXX: Need to clean out uniqueURLs or else new scrapes will never be scheduled
@@ -94,22 +97,4 @@ func main() {
 	}()
 
 	fanout.Start()
-}
-
-func submitWithBackoff(apiClient APIClient, resp ScrapeResponse) {
-	numErrors := 0
-	backoff := 2
-	var err error
-	for numErrors < 3 {
-		err = apiClient.SubmitScrapeResponse(&resp)
-		if err == nil {
-			return
-		}
-
-		numErrors++
-		time.Sleep(time.Duration(backoff) * time.Second)
-		backoff *= backoff
-	}
-
-	log.Printf("Failed to post scrape response! Error %v", err)
 }

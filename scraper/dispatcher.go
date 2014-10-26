@@ -10,7 +10,7 @@ import (
 // and is responsible for dispatching them (and possibly creating) to the correct workers.
 //
 // Currently there is 1 worker per domain so that the crawl request can be easily throttled.
-// Note: I assume that the cost of goroutines/workers is so low that there is no need to clean up workers
+// TODO: I assume that the cost of goroutines/workers is so low that there is no need to clean up workers
 // if they haven't been needed for a while.
 //
 // XXX Is making this an interface overkill?
