@@ -46,7 +46,18 @@ The Link Checker service is a monitoring tool that monitors a set of URLs for br
  
 ## Messaging Infrastructure
  
+Kafka and Protobuf (mainly because Avro doesn't seem to have solid support for Go)
+
+TODO: fillin details
+
 ## Crawler
+
+The crawler is responsible for:
+
+ * Listening to a Kafka topic for ScrapeRequests
+ * Rate-limiting requests to a domain to N/sec (currently 3)
+ * Retrieving a given URL [report error if code is not in the 200s]
+ * Parsing the HTML output and extracting any href links
  
 ## Crawl Scheduler
  
@@ -70,4 +81,5 @@ To think about:
  
  	* This makes processing a CrawlReport trickier and more expensive (because the PUT /CrawlReport operator needs to retrieve status info for any new links on the page) at the cost of not having to do as many reads when a given page changes status.
  	* And processing cost is only slightly more expensive unless a new link is discovered on a monitored page (or one goes away)
- c            
+
+Status updater v1: Ignore any optimization tricks until we know they are needed. Just pull all links when a page changes status and update any monitored pages appropriately.
