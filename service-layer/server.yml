@@ -3,3 +3,5 @@ cassandra:
   keyspace: link_checker
   nodes:
     - 127.0.0.1
+kafka:
+  broker: localhost:9092

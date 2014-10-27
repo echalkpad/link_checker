@@ -1,0 +1,34 @@
+package link_checker;
+
+option java_package = "com.eogren.link_checker.protobuf";
+option java_outer_classname = "ScraperMessages";
+
+message ScrapeRequest {
+    required string url = 1;
+}
+
+message ScrapeResponse {
+    required string url = 1;
+    required bool status = 2;
+    required string statusMessage = 3;
+    repeated string links = 4;
+    repeated string warnings = 5;
+}
+
+message ScrapeUpdate {
+    optional ScrapeResponse oldStatus = 1;
+    required ScrapeResponse newStatus = 2;
+}
+    
+message ScraperMessage {
+    enum Type { SCRAPE_REQUEST = 1; SCRAPE_RESPONSE = 2; SCRAPE_UPDATE = 3; }
+
+    required Type type = 1;
+
+    oneof msg {
+        ScrapeRequest request = 2;
+        ScrapeResponse response = 3;
+        ScrapeUpdate update = 4;
+    }
+}
+
