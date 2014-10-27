@@ -16,7 +16,7 @@ func webProcessFactory() RequestProcessor {
 }
 
 func workerFactory() Dispatcher {
-	return NewBucketDispatcher(10, RequestProcessorFactory(webProcessFactory))
+	return NewBucketDispatcher(3, RequestProcessorFactory(webProcessFactory))
 }
 
 // General architecture:
