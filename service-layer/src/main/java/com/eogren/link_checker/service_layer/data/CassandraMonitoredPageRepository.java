@@ -13,7 +13,6 @@ import java.util.concurrent.*;
 
 public class CassandraMonitoredPageRepository implements MonitoredPageRepository {
     protected Session session;
-    protected ExecutorService getWorkerService;
 
     protected PreparedStatement preparedInsertStatement;
     protected PreparedStatement preparedDeleteStatement;
@@ -25,12 +24,6 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
 
     public CassandraMonitoredPageRepository(Session session, int numThreads) {
         this.session = session;
-
-        preparedInsertStatement = session.prepare("INSERT INTO root_page (url) VALUES (?);");
-        preparedDeleteStatement = session.prepare("DELETE FROM root_page WHERE url = ?;");
-        preparedExistsStatement = session.prepare("SELECT url from root_page WHERE url = ?;");
-
-        getWorkerService = Executors.newFixedThreadPool(numThreads);
     }
 
     @Override
@@ -50,23 +43,47 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
     @Override
     @Timed
     public void addMonitoredPage(MonitoredPage newPage) {
-        BoundStatement bs = new BoundStatement(preparedInsertStatement);
+        BoundStatement bs = new BoundStatement(getPreparedInsertStatement());
         session.execute(bs.bind(newPage.getUrl()));
     }
 
     @Override
     @Timed
     public void deleteMonitoredPage(String url) {
-        BoundStatement bs = new BoundStatement(preparedDeleteStatement);
+        BoundStatement bs = new BoundStatement(getPreparedDeleteStatement());
         session.execute(bs.bind(url));
     }
 
     @Override
     @Timed
     public boolean pageAlreadyMonitored(String url) {
-        BoundStatement bs = new BoundStatement(preparedExistsStatement);
+        BoundStatement bs = new BoundStatement(getPreparedExistsStatement());
         ResultSet rs = session.execute(bs.bind(url));
 
         return (rs.one() != null);
+    }
+
+    protected PreparedStatement getPreparedInsertStatement() {
+        if (preparedInsertStatement == null) {
+            preparedInsertStatement = session.prepare("INSERT INTO root_page (url) VALUES (?);");
+        }
+
+        return preparedInsertStatement;
+    }
+
+    protected PreparedStatement getPreparedDeleteStatement() {
+        if (preparedDeleteStatement == null) {
+            preparedDeleteStatement = session.prepare("DELETE FROM root_page WHERE url = ?;");
+        }
+
+        return preparedDeleteStatement;
+    }
+
+    protected PreparedStatement getPreparedExistsStatement() {
+        if (preparedExistsStatement == null) {
+            preparedExistsStatement = session.prepare("SELECT url from root_page WHERE url = ?;");
+        }
+
+        return preparedExistsStatement;
     }
 }

@@ -1,0 +1,8 @@
+---
+cassandra:
+  keyspace: link_checker_int_tests
+  nodes:
+    - 127.0.0.1
+kafka:
+  broker: localhost:9092
+  prefix: int_tests

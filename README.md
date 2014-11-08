@@ -8,15 +8,14 @@ new) that I have not worked with at all or in a while.
 * Docker
 * ReactJS
 * Go
-* Dropwizard/Java Web Services
-* Cassandra?
+* Dropwizard
+* Cassandra
 
-General design:
-  - Dropwizard app exposes information about pages we wish to search for
-    404s (only depth 1 for now)
-  - ReactJS admin app to interact with Dropwizard service to allow users
-    to add new sites to examine
-  - Go based scraper agent that relies on goroutines to parallelize web
-    crawls. The scraper should be somewhat respectful of the site and
-    not make more than ~10 requests a second.
+See docs/design.md for general design
 
+To get integration tests to run, you must manually create the initial keyspace:
+    
+    create keyspace link_checker_int_tests with replication={'class':'SimpleStrategy', 'replication_factor':1}
+    
+The integration tests will create/drop CFs in this keyspace.
+    

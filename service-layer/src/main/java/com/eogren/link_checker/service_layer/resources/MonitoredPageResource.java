@@ -10,6 +10,7 @@ import com.wordnik.swagger.annotations.*;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/api/v1/monitored_page")
@@ -72,7 +73,7 @@ public class MonitoredPageResource {
      * Add a new Monitored Page to the system. The root page URL is used as the key.
      * TODO: Normalize URLs
      */
-    public APIStatus newMonitoredPage(@ApiParam(value = "URL to add to the system") @PathParam("url") String url,
+    public APIStatus newMonitoredPage(@ApiParam(value = "URL to add to the system", required=true) @PathParam("url") String url,
                                       @Valid MonitoredPage newPage) {
         if (!url.equals(newPage.getUrl())) {
             throw new APIStatusException(
@@ -103,5 +104,15 @@ public class MonitoredPageResource {
 
         repository.deleteMonitoredPage(url);
         return new APIStatus(true, "Deleted successfully.");
+    }
+
+    @GET
+    @Timed
+    @Path("search")
+    @ApiOperation(value="Search for monitored pages that meet the given criteria.")
+    public List<MonitoredPage> searchForMonitoredPages(
+            @ApiParam(value="Filter to pages that link to a given page") @DefaultValue("") @QueryParam("links_to") String links_to
+    ) {
+        return new ArrayList<>();
     }
 }

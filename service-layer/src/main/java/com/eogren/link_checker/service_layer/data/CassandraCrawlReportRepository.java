@@ -18,23 +18,12 @@ import java.util.UUID;
 public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private final Session session;
 
-    private final PreparedStatement insertCrawlReportStatement;
-    private final PreparedStatement findLatestStatement;
-    private final PreparedStatement findByUuidStatement;
+    private PreparedStatement insertCrawlReportStatement;
+    private PreparedStatement findLatestStatement;
+    private PreparedStatement findByUuidStatement;
 
     public CassandraCrawlReportRepository(Session session) {
         this.session = session;
-        insertCrawlReportStatement = session.prepare(
-                "INSERT INTO crawl_report (url, date, error, status_code, links) VALUES (?, ?, ?, ?, ?);"
-        );
-
-        findLatestStatement = session.prepare(
-                "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? ORDER BY date DESC LIMIT 1"
-        );
-
-        findByUuidStatement = session.prepare(
-                "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? AND date = ?"
-        );
     }
 
     @Override
@@ -47,7 +36,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         try {
             String json_links = mapper.writeValueAsString(report.getLinks());
 
-            BoundStatement bs = insertCrawlReportStatement.bind(
+            BoundStatement bs = getInsertCrawlReportStatement().bind(
                     report.getUrl(),
                     uuid, // XXX this is based on time of POST not on crawlTime, but probably ok
                     report.getError(),
@@ -66,7 +55,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     @Override
     @Timed
     public Optional<CrawlReport> getLatestStatus(String url) {
-        BoundStatement bs = findLatestStatement.bind(url);
+        BoundStatement bs = getFindLatestStatement().bind(url);
         return getOneCrawlReport(bs);
     }
 
@@ -76,7 +65,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     public Optional<CrawlReport> getByUuid(String url, String uuidString) {
         UUID uuid = UUID.fromString(uuidString);
 
-        BoundStatement bs = findByUuidStatement.bind(url, uuid);
+        BoundStatement bs = getFindByUuidStatement().bind(url, uuid);
         return getOneCrawlReport(bs);
     }
 
@@ -110,4 +99,35 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
             throw new RuntimeException("Error reading from database", ex);
         }
     }
+
+    protected PreparedStatement getInsertCrawlReportStatement() {
+        if (insertCrawlReportStatement == null) {
+            insertCrawlReportStatement = session.prepare(
+                    "INSERT INTO crawl_report (url, date, error, status_code, links) VALUES (?, ?, ?, ?, ?);"
+            );
+        }
+
+        return insertCrawlReportStatement;
+    }
+
+    protected PreparedStatement getFindLatestStatement() {
+        if (findLatestStatement == null) {
+            findLatestStatement = session.prepare(
+                    "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? ORDER BY date DESC LIMIT 1"
+            );
+        }
+
+        return findLatestStatement;
+    }
+
+    protected PreparedStatement getFindByUuidStatement() {
+        if (findByUuidStatement == null) {
+            findByUuidStatement = session.prepare(
+                    "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? AND date = ?"
+            );
+        }
+
+        return findByUuidStatement;
+    }
+
 }

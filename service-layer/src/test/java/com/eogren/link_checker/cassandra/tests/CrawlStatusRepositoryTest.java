@@ -5,6 +5,7 @@ import com.datastax.driver.core.Session;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraCrawlReportRepository;
+import com.eogren.link_checker.service_layer.schema.SchemaManager;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.junit.After;
@@ -38,8 +39,8 @@ public class CrawlStatusRepositoryTest {
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
-        CreateSchemaCommand schemaCommand = new CreateSchemaCommand(session);
-        schemaCommand.createSchema();
+        SchemaManager schemaManager = new SchemaManager(session);
+        schemaManager.createSchema();
 
         repo = new CassandraCrawlReportRepository(session);
     }

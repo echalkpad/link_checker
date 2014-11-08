@@ -6,6 +6,7 @@ import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraMonitoredPageRepository;
+import com.eogren.link_checker.service_layer.schema.SchemaManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +37,8 @@ public class CassandraMonitoredPageRepositoryTest {
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
-        CreateSchemaCommand schemaCommand = new CreateSchemaCommand(session);
-        schemaCommand.createSchema();
+        SchemaManager schemaManager = new SchemaManager(session);
+        schemaManager.createSchema();
 
         repo = new CassandraMonitoredPageRepository(session);
     }
