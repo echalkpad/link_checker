@@ -6,6 +6,9 @@ import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.data.CrawlReportRepository;
 import com.eogren.link_checker.messaging.MessageEmitter;
 import com.eogren.link_checker.messaging.ProtobufSerializer;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -15,7 +18,8 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Optional;
 
-@Path("/api/v1/crawl_report/")
+@Path("/api/v1/crawl_report")
+@Api(value="/api/v1/crawl_report", description="Operations about crawl reports")
 @Produces(MediaType.APPLICATION_JSON)
 public class CrawlReportResource {
 
@@ -29,6 +33,7 @@ public class CrawlReportResource {
 
     @POST
     @Timed
+    @ApiOperation(value="Submit a new crawl report", notes = "UUID of crawl report should be returned in response.")
     public Response newCrawlReport(@Valid CrawlReport crawlReport) {
         Optional<CrawlReport> oldCrawlReport = repo.getLatestStatus(crawlReport.getUrl());
         String uuid = repo.addCrawlReport(crawlReport);
@@ -42,8 +47,9 @@ public class CrawlReportResource {
 
     @GET
     @Path("/{url}/{uuid}")
-    public Response getCrawlReport(@PathParam("url") String url,
-                                   @PathParam("uuid") String uuid) {
+    @ApiOperation(value="Retrieve a crawl report")
+    public Response getCrawlReport(@ApiParam(value="URL crawl report is for") @PathParam("url") String url,
+                                   @ApiParam(value="UUID of crawl report") @PathParam("uuid") String uuid) {
         Optional<CrawlReport> cr = repo.getByUuid(url, uuid);
         if (!cr.isPresent()) {
             return Response.status(404).entity(new APIStatus(false, "Not found")).build();

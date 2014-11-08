@@ -5,13 +5,15 @@ import com.eogren.link_checker.service_layer.api.APIStatus;
 import com.eogren.link_checker.service_layer.api.APIStatusException;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.data.MonitoredPageRepository;
+import com.wordnik.swagger.annotations.*;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.util.List;
 
-@Path("/api/v1/monitored_page/")
+@Path("/api/v1/monitored_page")
+@Api(value="/api/v1/monitored_page", description="Deal with monitored pages")
 @Produces(MediaType.APPLICATION_JSON)
 /**
  * RootPageResource represents the API calls necessary to deal with RootPages.
@@ -30,8 +32,13 @@ public class MonitoredPageResource {
 
     @GET
     @Timed
+    @ApiOperation(value = "Retrieve all monitored pages in the system.",
+            notes="This list can be large; the client can" +
+                "cache the ETag returned by this method and use it to perform client-side caching.",
+            response = MonitoredPage.class,
+            responseContainer = "List")
     /**
-     * Return a list of all RootPages in the system.
+     * Return a list of all Monitored Pages in the system.
      * TODO: Pagination
      */
     public Response getListing(@Context Request request) {
@@ -59,11 +66,13 @@ public class MonitoredPageResource {
     @PUT
     @Timed
     @Path("{url: .*}")
+    @ApiOperation(value = "Add a new Monitored Page to the system")
+    @ApiResponses(value = { @ApiResponse(code=405, message="Invalid Input")})
     /**
-     * Add a new Page to the system. The root page URL is used as the key.
+     * Add a new Monitored Page to the system. The root page URL is used as the key.
      * TODO: Normalize URLs
      */
-    public APIStatus newMonitoredPage(@PathParam("url") String url,
+    public APIStatus newMonitoredPage(@ApiParam(value = "URL to add to the system") @PathParam("url") String url,
                                       @Valid MonitoredPage newPage) {
         if (!url.equals(newPage.getUrl())) {
             throw new APIStatusException(
@@ -82,10 +91,12 @@ public class MonitoredPageResource {
     @DELETE
     @Timed
     @Path("{url: .*}")
+    @ApiOperation(value="Delete a Monitored Page from the system.")
+    @ApiResponses(value={ @ApiResponse(code=404, message="Monitored Page does not exist")})
     /**
      * Delete a Page from the system. The root page URL is used as the key.
      */
-    public APIStatus deleteRootPage(@PathParam("url") String url) {
+    public APIStatus deleteRootPage(@ApiParam(value="URL to delete") @PathParam("url") String url) {
         if (!repository.pageAlreadyMonitored(url)) {
             throw new APIStatusException(new APIStatus(false, "Resource not found"), 404);
         }
