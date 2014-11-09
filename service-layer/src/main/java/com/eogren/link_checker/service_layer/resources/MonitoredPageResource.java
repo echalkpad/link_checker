@@ -66,7 +66,7 @@ public class MonitoredPageResource {
 
     @PUT
     @Timed
-    @Path("{url: .*}")
+    @Path("/{url: .*}")
     @ApiOperation(value = "Add a new Monitored Page to the system")
     @ApiResponses(value = { @ApiResponse(code=405, message="Invalid Input")})
     /**
@@ -91,7 +91,7 @@ public class MonitoredPageResource {
 
     @DELETE
     @Timed
-    @Path("{url: .*}")
+    @Path("/{url: .*}")
     @ApiOperation(value="Delete a Monitored Page from the system.")
     @ApiResponses(value={ @ApiResponse(code=404, message="Monitored Page does not exist")})
     /**
@@ -108,7 +108,7 @@ public class MonitoredPageResource {
 
     @GET
     @Timed
-    @Path("search")
+    @Path("/search")
     @ApiOperation(value="Search for monitored pages that meet the given criteria.")
     public List<MonitoredPage> searchForMonitoredPages(
             @ApiParam(value="Filter to pages that link to a given page") @DefaultValue("") @QueryParam("links_to") String links_to
