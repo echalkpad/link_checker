@@ -17,7 +17,7 @@ public class KafkaProducer implements MessageEmitter {
 
     @Override
     public void emitMessage(String topic, String partition_key, byte[] raw_data) {
-        producer.send(new KeyedMessage<>(topic, partition_key, raw_data));
+        producer.send(new KeyedMessage<>(getStringWithPrefix(topic), partition_key, raw_data));
     }
 
     protected Producer<String, byte[]> getProducer() {
@@ -34,5 +34,14 @@ public class KafkaProducer implements MessageEmitter {
         props.put("request.required.acks", "1");
 
         return new ProducerConfig(props);
+    }
+
+    protected String getStringWithPrefix(String str) {
+        String prefix = config.getPrefix();
+        if (prefix != null) {
+            return prefix + "-" + str;
+        }
+
+        return str;
     }
 }
