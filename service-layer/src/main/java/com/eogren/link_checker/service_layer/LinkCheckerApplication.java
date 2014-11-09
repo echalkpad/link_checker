@@ -1,10 +1,11 @@
 package com.eogren.link_checker.service_layer;
 
+import com.eogren.link_checker.messaging.EmitterFactory;
+import com.eogren.link_checker.messaging.MessageEmitter;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.*;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.health.CassandraHealthCheck;
-import com.eogren.link_checker.messaging.KafkaProducer;
 import com.eogren.link_checker.service_layer.resources.CrawlReportResource;
 import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
 
@@ -30,7 +31,7 @@ import java.util.EnumSet;
 public class LinkCheckerApplication extends Application<LinkCheckerConfiguration> {
     private MonitoredPageRepository monitoredPageRepo;
     private CrawlReportRepository crawlReportRepo;
-    private KafkaProducer kafkaProducer;
+    private MessageEmitter messageEmitter;
 
     public static void main(String[] args) throws Exception {
         new LinkCheckerApplication().run(args);
@@ -50,11 +51,11 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
     @Override
     public void run(LinkCheckerConfiguration config, Environment environment) throws DatabaseException {
         // Misc
-        kafkaProducer = new KafkaProducer(config.getKafkaConfig());
+        messageEmitter = EmitterFactory.create(config.getKafkaConfig());
 
         // API Resources
         environment.jersey().register(new MonitoredPageResource(getMonitoredPageRepository(config)));
-        environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config), kafkaProducer));
+        environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config), messageEmitter));
 
         // Health checks
         environment.healthChecks().register("cassandra", new CassandraHealthCheck(config.getCassandraFactory()));

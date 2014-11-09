@@ -6,3 +6,4 @@ cassandra:
 kafka:
   broker: localhost:9092
   prefix: int_tests
+  type: nullEmitter

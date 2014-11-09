@@ -11,10 +11,16 @@ public class KafkaConfig {
     protected String zkAddress;
 
     protected String prefix;
+    protected String type;
 
     @JsonProperty("broker")
     public String getZkAddress() { return zkAddress; }
 
     @JsonProperty("prefix")
     public String getPrefix() { return prefix; }
+
+    @JsonProperty("type")
+    public String getType() {
+        return (type == null) ? "default" : type;
+    }
 }
