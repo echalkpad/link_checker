@@ -15,6 +15,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private final Session session;
 
     private PreparedStatement insertCrawlReportStatement;
+    private PreparedStatement insertLatestCrawlReportStatement;
     private PreparedStatement findLatestStatement;
     private PreparedStatement findByUuidStatement;
 
@@ -29,15 +30,25 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
 
         Map<String, UDTValue> links = serializeLinkToUdt(report.getLinks());
 
-        BoundStatement bs = getInsertCrawlReportStatement().bind(
+        BatchStatement batch = new BatchStatement();
+
+        batch.add(getInsertCrawlReportStatement().bind(
                 report.getUrl(),
                 uuid, // XXX this is based on time of POST not on crawlTime, but probably ok
                 report.getError(),
                 report.getStatusCode(),
                 links
-        );
+        ));
 
-        session.execute(bs);
+        batch.add(getInsertLatestCrawlReportStatement().bind(
+                report.getUrl(),
+                uuid,
+                report.getError(),
+                report.getStatusCode(),
+                links
+        ));
+
+        session.execute(batch);
 
         return uuid.toString();
     }
@@ -64,11 +75,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         ResultSet rs = session.execute(bs);
 
         Row r = rs.one();
-        if (r == null) {
-            return Optional.empty();
-        }
-
-        return Optional.of(deserializeCrawlReport(r));
+        return r == null ? Optional.empty() : Optional.of(deserializeCrawlReport(r));
     }
 
     protected CrawlReport deserializeCrawlReport(Row r) {
@@ -132,10 +139,20 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         return insertCrawlReportStatement;
     }
 
+    protected PreparedStatement getInsertLatestCrawlReportStatement() {
+        if (insertLatestCrawlReportStatement == null) {
+            insertLatestCrawlReportStatement = session.prepare(
+                    "INSERT INTO latest_crawl_report (url, date, error, status_code, links) VALUES (?, ?, ?, ?, ?);"
+            );
+        }
+
+        return insertLatestCrawlReportStatement;
+    }
+
     protected PreparedStatement getFindLatestStatement() {
         if (findLatestStatement == null) {
             findLatestStatement = session.prepare(
-                    "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? ORDER BY date DESC LIMIT 1"
+                    "SELECT url, date, error, status_code, links FROM latest_crawl_report WHERE url = ?"
             );
         }
 

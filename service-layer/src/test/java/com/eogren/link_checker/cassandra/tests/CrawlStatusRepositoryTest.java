@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -36,7 +37,6 @@ public class CrawlStatusRepositoryTest {
 
         session = Cluster.builder().addContactPoint(cluster).build().connect();
         String q = "CREATE KEYSPACE " + keyspace + " WITH replication={'class':'SimpleStrategy', 'replication_factor': 1};";
-        System.out.println(q);
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
@@ -51,6 +51,12 @@ public class CrawlStatusRepositoryTest {
         session.execute("DROP KEYSPACE " + keyspace + ";");
         session.close();
         session = null;
+    }
+
+    @Test
+    public void testCanRetrieveEmptyStatus() {
+        Optional<CrawlReport> cr = repo.getLatestStatus("http://notadded.com");
+        assertFalse("Expected to get empty CrawlReport for uncrawled page", cr.isPresent());
     }
 
     @Test
@@ -69,7 +75,13 @@ public class CrawlStatusRepositoryTest {
 
         assertNotNull("Expected to be able to retrieve CR by uuid", cr2);
         assertCrawlReportsEqual(cr, cr2);
+
+        CrawlReport cr3 = repo.getLatestStatus(url).orElse(null);
+
+        assertNotNull("Expected to be able to retrieve latest status", cr3);
+        assertCrawlReportsEqual(cr, cr3);
     }
+
 
     protected CrawlReport createCrawlReport(String url) {
         return new CrawlReport(url, DateTime.now(), null, 200, new ArrayList<>());
