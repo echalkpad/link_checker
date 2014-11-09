@@ -13,6 +13,7 @@
         <module>service-layer-messaging</module>
         <module>service-layer-service</module>
         <module>service-layer-config</module>
+        <module>status-updater</module>
     </modules>
 
     <properties>
