@@ -1,6 +1,8 @@
 package com.eogren.link_checker.service_layer.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import org.hibernate.validator.constraints.URL;
 import org.joda.time.DateTime;
 
@@ -15,6 +17,7 @@ public class CrawlReport {
     private int statusCode;
 
     @NotNull
+    @JsonSerialize(using=DateTimeSerializer.class)
     private DateTime date;
 
     @NotNull
