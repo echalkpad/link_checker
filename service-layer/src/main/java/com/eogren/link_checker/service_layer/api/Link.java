@@ -21,6 +21,26 @@ public class Link {
         this.anchorText = anchorText;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Link link = (Link) o;
+
+        if (!anchorText.equals(link.anchorText)) return false;
+        if (!url.equals(link.url)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = url.hashCode();
+        result = 31 * result + anchorText.hashCode();
+        return result;
+    }
+
     @JsonProperty
     public String getUrl() {
         return url;

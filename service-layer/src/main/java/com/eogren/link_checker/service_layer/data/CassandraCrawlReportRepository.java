@@ -5,15 +5,11 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.utils.UUIDs;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.Link;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.joda.time.DateTime;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private final Session session;
@@ -29,28 +25,23 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     @Override
     @Timed
     public String addCrawlReport(CrawlReport report) {
-        ObjectMapper mapper = new ObjectMapper();
-
         UUID uuid = UUIDs.timeBased();
 
-        try {
-            String json_links = mapper.writeValueAsString(report.getLinks());
+        Map<String, UDTValue> links = serializeLinkToUdt(report.getLinks());
 
-            BoundStatement bs = getInsertCrawlReportStatement().bind(
-                    report.getUrl(),
-                    uuid, // XXX this is based on time of POST not on crawlTime, but probably ok
-                    report.getError(),
-                    report.getStatusCode(),
-                    json_links
-            );
+        BoundStatement bs = getInsertCrawlReportStatement().bind(
+                report.getUrl(),
+                uuid, // XXX this is based on time of POST not on crawlTime, but probably ok
+                report.getError(),
+                report.getStatusCode(),
+                links
+        );
 
-            session.execute(bs);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        session.execute(bs);
 
         return uuid.toString();
     }
+
 
     @Override
     @Timed
@@ -81,24 +72,55 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     }
 
     protected CrawlReport deserializeCrawlReport(Row r) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            List<Link> links = mapper.readValue(
-                    r.getString("links"),
-                    new TypeReference<List<Link>>() {
-                    });
+        List<Link> links = extractLinksFromRow(r);
 
-            return new CrawlReport(
-                    r.getString("url"),
-                    new DateTime(UUIDs.unixTimestamp(r.getUUID("date"))),
-                    r.getString("error"),
-                    r.getInt("status_code"),
-                    links
-            );
-        } catch (IOException ex) {
-            throw new RuntimeException("Error reading from database", ex);
-        }
+        return new CrawlReport(
+                r.getString("url"),
+                new DateTime(UUIDs.unixTimestamp(r.getUUID("date"))),
+                r.getString("error"),
+                r.getInt("status_code"),
+                links
+        );
     }
+
+    /**
+     * Convert a Cassandra row [map and UDT] to the Link POJO
+     * @param r row to convert
+     * @return
+     */
+    private List<Link> extractLinksFromRow(Row r) {
+        return r.getMap("links", String.class, UDTValue.class).values()
+                .stream()
+                .map(v -> new Link(v.getString("url"), v.getString("anchorText")))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Given a list of Link POJOs, translate them to a map of UDT's that
+     * can be inserted into Cassandra
+     * @param links links to convert
+     * @return
+     */
+    private Map<String, UDTValue> serializeLinkToUdt(List<Link> links) {
+        UserType linkType =
+                session
+                        .getCluster()
+                        .getMetadata()
+                        .getKeyspace(session.getLoggedKeyspace())
+                        .getUserType("found_link");
+
+        HashMap<String, UDTValue> ret = new HashMap<>();
+        for (Link link : links) {
+            UDTValue v = linkType.newValue()
+                    .setString("url", link.getUrl())
+                    .setString("anchorText", link.getAnchorText());
+
+            ret.put(link.getUrl(), v);
+        }
+
+        return ret;
+    }
+
 
     protected PreparedStatement getInsertCrawlReportStatement() {
         if (insertCrawlReportStatement == null) {

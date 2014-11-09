@@ -19,6 +19,11 @@ public class SchemaManager {
      */
     public void createSchema() {
         try {
+            executeIgnoreNotExists(session, "CREATE TYPE IF NOT EXISTS " + session.getLoggedKeyspace() + ".found_link ( " +
+                "url text, " +
+                "anchorText text " +
+            ");");
+
             executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS meta_data ( key text PRIMARY KEY, value text ) WITH comment='config metadata';");
             executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS root_page( " +
                     "url text PRIMARY KEY );");
@@ -27,9 +32,18 @@ public class SchemaManager {
                             "date timeuuid, " +
                             "error text, " +
                             "status_code int, " +
-                            "links text, " +
+                            "links map<text, frozen <found_link>>, " +
                             "PRIMARY KEY (url, date)" +
                             ") WITH CLUSTERING ORDER BY (date DESC);"
+            );
+            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS latest_crawl_report( " +
+                            "url text, " +
+                            "date timeuuid, " +
+                            "error text, " +
+                            "status_code int, " +
+                            "links map<text, frozen <found_link>>, " +
+                            "PRIMARY KEY (url)" +
+                            ");"
             );
             executeIgnoreNotExists(session, "INSERT INTO meta_data (key, value) VALUES ('db_version', '1');");
         } catch (QueryValidationException | QueryExecutionException | NoHostAvailableException ex) {
@@ -40,8 +54,10 @@ public class SchemaManager {
     public void dropSchema() {
         try {
             executeIgnoreNotExists(session, "DROP TABLE crawl_report");
+            executeIgnoreNotExists(session, "DROP TABLE latest_crawl_report");
             executeIgnoreNotExists(session, "DROP TABLE root_page");
             executeIgnoreNotExists(session, "DROP TABLE meta_data");
+            executeIgnoreNotExists(session, "DROP TYPE " + session.getLoggedKeyspace() + ".found_link");
         } catch (QueryValidationException | QueryExecutionException | NoHostAvailableException ex) {
             System.out.println(ex.getMessage());
         }

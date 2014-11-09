@@ -3,6 +3,7 @@ package com.eogren.link_checker.cassandra.tests;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
+import com.eogren.link_checker.service_layer.api.Link;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraCrawlReportRepository;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
@@ -57,6 +58,7 @@ public class CrawlStatusRepositoryTest {
         final String url = "http://www.cnn.com";
 
         CrawlReport cr = createCrawlReport(url);
+        cr.getLinks().add(new Link("http://www.hello.com", "Hello There"));
 
         String uuid = repo.addCrawlReport(cr);
 
