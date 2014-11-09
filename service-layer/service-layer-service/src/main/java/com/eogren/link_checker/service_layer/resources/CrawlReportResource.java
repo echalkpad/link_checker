@@ -40,7 +40,7 @@ public class CrawlReportResource {
 
         URI uri = UriBuilder.fromResource(this.getClass()).path("{uuid}").build(uuid);
 
-        emitScraperMessage(oldCrawlReport, crawlReport);
+        msgEmitter.notifyCrawlReport(oldCrawlReport, crawlReport);
 
         return Response.created(uri).entity(new APIStatus(true, "Added")).build();
     }
@@ -58,10 +58,5 @@ public class CrawlReportResource {
         return Response.ok(cr).build();
     }
 
-    // XXX Doesn't really fit here, move to its own class
-    private void emitScraperMessage(Optional<CrawlReport> oldCrawlReport, CrawlReport newCrawlReport) {
-        byte[] buf = ProtobufSerializer.createScrapeUpdate(oldCrawlReport, newCrawlReport);
-        msgEmitter.emitMessage("scrapeReports", newCrawlReport.getUrl(), buf);
-    }
 
 }

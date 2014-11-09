@@ -10,8 +10,17 @@ public class StatusUpdaterConfig {
     @Valid
     protected KafkaConfiguration kafkaConfig;
 
+    @NotNull
+    @Valid
+    protected DataApiConfig dataApiConfig;
+
     @JsonProperty("kafka")
     public KafkaConfiguration getKafkaConfig() {
         return kafkaConfig;
+    }
+
+    @JsonProperty("data_api")
+    public DataApiConfig getDataApiConfig() {
+        return dataApiConfig;
     }
 }

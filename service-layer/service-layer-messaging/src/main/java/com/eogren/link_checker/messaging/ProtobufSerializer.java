@@ -8,7 +8,7 @@ import java.util.Optional;
 public class ProtobufSerializer {
     /**
      * Serialize a CrawlReport into its proto buf representation.
-     * @param rep Crawl Report to serialize
+     * @param crawlReport Crawl Report to serialize
      * @return Protobuf object
      */
     public static ScraperMessages.ScrapeResponse crawlReportToProtobuf(CrawlReport crawlReport) {
