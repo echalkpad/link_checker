@@ -8,7 +8,9 @@
         </encoder>
     </appender>
 
-    <root level="info">
+    <logger name="com.eogren" level="INFO" />
+
+    <root level="warn">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

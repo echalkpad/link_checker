@@ -38,6 +38,7 @@ public class LinkCheckerConfiguration extends Configuration {
 
     @JsonProperty("kafka")
     public void setKafkaConfig(KafkaConfig config) { kafkaConfig = config; }
+
     @JsonProperty
     public String getRepoType() {
         return repoType;

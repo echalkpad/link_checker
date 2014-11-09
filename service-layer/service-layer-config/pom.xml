@@ -16,6 +16,9 @@
     <name>service-layer-config</name>
 
     <dependencies>
+        <!-- This technically shouldn't depend on DropWizard, but it needs
+        some of the hibernate validators and Jackson, and Dropwizard
+        pulls those in anyways.-->
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
