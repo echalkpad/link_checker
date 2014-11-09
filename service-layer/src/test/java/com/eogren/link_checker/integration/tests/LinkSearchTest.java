@@ -8,6 +8,7 @@ import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
+import com.eogren.link_checker.tests.categories.IntegrationTest;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.io.Resources;
 import com.sun.jersey.api.client.*;
@@ -19,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import javax.ws.rs.core.MediaType;
 import java.io.File;
@@ -27,6 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Category(IntegrationTest.class)
 public class LinkSearchTest {
 
     final String apiPrefix = "/api/v1";

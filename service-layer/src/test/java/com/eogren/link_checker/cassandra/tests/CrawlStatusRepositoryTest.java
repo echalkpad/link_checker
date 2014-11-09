@@ -7,17 +7,20 @@ import com.eogren.link_checker.service_layer.api.Link;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraCrawlReportRepository;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
+import com.eogren.link_checker.tests.categories.IntegrationTest;
 import org.joda.time.DateTime;
 import org.joda.time.Seconds;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
+@Category(IntegrationTest.class)
 public class CrawlStatusRepositoryTest {
     protected String keyspace;
     protected Session session;

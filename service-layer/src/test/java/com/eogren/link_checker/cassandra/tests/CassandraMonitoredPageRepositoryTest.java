@@ -7,9 +7,11 @@ import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.CassandraMonitoredPageRepository;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
+import com.eogren.link_checker.tests.categories.IntegrationTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.*;
 
+@Category(IntegrationTest.class)
 public class CassandraMonitoredPageRepositoryTest {
     protected String keyspace;
     protected Session session;
