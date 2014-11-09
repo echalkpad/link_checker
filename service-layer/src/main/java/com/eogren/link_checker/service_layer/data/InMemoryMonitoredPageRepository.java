@@ -3,6 +3,7 @@ package com.eogren.link_checker.service_layer.data;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.api.Page;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,5 +38,10 @@ public class InMemoryMonitoredPageRepository implements MonitoredPageRepository 
     @Override
     public boolean pageAlreadyMonitored(String url) {
         return pages.containsKey(url);
+    }
+
+    @Override
+    public List<MonitoredPage> findByUrl(Collection<String> urls) {
+        return pages.values().stream().filter(x -> urls.contains(x)).collect(Collectors.toList());
     }
 }

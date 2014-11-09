@@ -3,10 +3,13 @@ package com.eogren.link_checker.service_layer.data;
 import com.codahale.metrics.annotation.Timed;
 import com.datastax.driver.core.*;
 
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.api.Page;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -61,6 +64,27 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
         ResultSet rs = session.execute(bs.bind(url));
 
         return (rs.one() != null);
+    }
+
+    @Override
+    @Timed
+    public List<MonitoredPage> findByUrl(Collection<String> urls) {
+        List<MonitoredPage> ret = new ArrayList<>();
+        String[] urlArr = new String[urls.size()];
+        urls.toArray(urlArr);
+
+        String s = QueryBuilder
+                .select("url")
+                .from("root_page")
+                .where(QueryBuilder.in("url", urlArr))
+                .getQueryString();
+
+        ResultSet rows = session.execute(s, urlArr);
+        for (Row r : rows) {
+            ret.add(new MonitoredPage(r.getString("url")));
+        }
+
+        return ret;
     }
 
     protected PreparedStatement getPreparedInsertStatement() {

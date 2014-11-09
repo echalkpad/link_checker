@@ -7,3 +7,11 @@ kafka:
   broker: localhost:9092
   prefix: int_tests
   type: nullEmitter
+logging:
+  level: INFO
+  loggers:
+    io.dropwizard: DEBUG
+    com.eogren: DEBUG
+  appenders:
+    - type: console
+

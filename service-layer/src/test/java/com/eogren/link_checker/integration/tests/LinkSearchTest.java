@@ -2,30 +2,36 @@ package com.eogren.link_checker.integration.tests;
 
 import com.eogren.link_checker.service_layer.LinkCheckerApplication;
 import com.eogren.link_checker.service_layer.LinkCheckerConfiguration;
+import com.eogren.link_checker.service_layer.api.CrawlReport;
+import com.eogren.link_checker.service_layer.api.Link;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.io.Resources;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.*;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import io.dropwizard.testing.junit.DropwizardAppRule;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import javax.ws.rs.core.MediaType;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class LinkSearchTest {
+
+    final String apiPrefix = "/api/v1";
+    final String mpPrefix = apiPrefix + "/monitored_page/";
+    final String crPrefix = apiPrefix + "/crawl_report/";
 
     @ClassRule
     public static DropwizardAppRule<LinkCheckerConfiguration> RULE =
@@ -53,14 +59,79 @@ public class LinkSearchTest {
 
     @Test
     public void testEmptyResponse() {
-        Client client = getClient();
+        try {
+            Client client = getClient();
 
-        List<MonitoredPage> response =
-            getResource(client, "/api/v1/monitored_page/search?links_to=www.cnn.com")
-            .get(new GenericType<List<MonitoredPage>>() {});
+            List<MonitoredPage> response =
+                getResource(client, mpPrefix + "search?links_to=http://www.cnn.com")
+                .get(new GenericType<List<MonitoredPage>>() {
+                });
 
 
-        assertEquals("Expected links to to be 0", 0, response.size());
+            assertEquals("Expected links to to be 0", 0, response.size());
+        } catch (UniformInterfaceException uie) {
+            uieHandler(uie);
+        }
+    }
+
+    @Test
+    public void testLinkSearchImplicitLink() {
+        try {
+            Client client = getClient();
+            final String url = "http://www.page1.com";
+
+            addMonitoredPage(client, url);
+            List<MonitoredPage> response =
+                    getResource(client, mpPrefix + "search?links_to=" + url)
+                    .get(new GenericType<List<MonitoredPage>>(){});
+
+            assertEquals("Expect monitored pages to implicitly link to themselves [empty size]", 1, response.size());
+            assertEquals("Expect URLs to match", url, response.get(0).getUrl());
+        } catch (UniformInterfaceException uie) {
+            uieHandler(uie);
+        }
+    }
+
+    @Test
+    public void testLinkSearch() {
+        final String target_url = "http://www.brokenlink.com";
+
+        try {
+            Client client = getClient();
+
+            addMonitoredPage(client, "http://www.page1.com");
+            addMonitoredPage(client, "http://www.page2.com");
+
+            List<Link> page1List = new ArrayList<>();
+            page1List.add(new Link(target_url, "Page 1"));
+            page1List.add(new Link("http://www.cnn.com", "CNN"));
+
+            postCrawlReport(client, "http://www.page1.com", page1List);
+            postCrawlReport(client, "http://anonmonitoredpage.com", page1List);
+
+            List<MonitoredPage> response =
+                    getResource(client, mpPrefix + "search?links_to=" + target_url)
+                            .get(new GenericType<List<MonitoredPage>>() {
+                            });
+
+
+            assertEquals("Expected found monitored pages to to be 1", 1, response.size());
+            assertEquals("Expected URLs to match", "http://www.page1.com", response.get(0).getUrl());
+        } catch (UniformInterfaceException uie) {
+            uieHandler(uie);
+        }
+    }
+
+    private void postCrawlReport(Client client, String crawled_url, List<Link> links) {
+        CrawlReport crp = new CrawlReport(
+                crawled_url,
+                new DateTime(),
+                null,
+                200,
+                links
+        );
+
+        getResource(client, crPrefix).entity(crp, MediaType.APPLICATION_JSON).post();
     }
 
     private WebResource getResource(Client client, String path) {
@@ -75,7 +146,7 @@ public class LinkSearchTest {
         return Client.create(clientConfig);
     }
 
-    public static String resourceFilePath(String resourceClassPathLocation) {
+    private static String resourceFilePath(String resourceClassPathLocation) {
         try {
             return new File(Resources.getResource(resourceClassPathLocation).toURI()).getAbsolutePath();
         } catch (Exception e) {
@@ -83,4 +154,19 @@ public class LinkSearchTest {
         }
     }
 
+    private void addMonitoredPage(Client client, String url) {
+        getResource(client, mpPrefix + url)
+                .entity(new MonitoredPage(url), MediaType.APPLICATION_JSON)
+                .put();
+    }
+
+    private void uieHandler(UniformInterfaceException uie) {
+        ClientResponse resp = uie.getResponse();
+        StringBuffer sb = new StringBuffer();
+        sb.append("UniformInterfaceException caught: HTTP code ");
+        sb.append(resp.getStatus());
+        sb.append(", body: ");
+        sb.append(resp.getEntity(String.class));
+        fail(sb.toString());
+    }
 }

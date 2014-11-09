@@ -2,6 +2,7 @@ package com.eogren.link_checker.service_layer.data;
 
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,4 +30,11 @@ public interface CrawlReportRepository {
      * @return CrawlReport if it exists; null if none found
      */
     public Optional<CrawlReport> getByUuid(String url, String uuid);
+
+    /**
+     * Retrieve the list of pages that link to a given url.
+     * @param url URL to search on
+     * @return List of URLs that link to a given url.
+     */
+    public List<String> getLatestLinksFor(String url);
 }

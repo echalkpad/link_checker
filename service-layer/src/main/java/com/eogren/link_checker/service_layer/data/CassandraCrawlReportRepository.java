@@ -7,7 +7,6 @@ import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.Link;
 import org.joda.time.DateTime;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,6 +17,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private PreparedStatement insertLatestCrawlReportStatement;
     private PreparedStatement findLatestStatement;
     private PreparedStatement findByUuidStatement;
+    private PreparedStatement findByLatestLinkStatement;
 
     public CassandraCrawlReportRepository(Session session) {
         this.session = session;
@@ -71,6 +71,19 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         return getOneCrawlReport(bs);
     }
 
+    @Override
+    @Timed
+    public List<String> getLatestLinksFor(String url) {
+        ResultSet rs = session.execute(getFindLatestLinksStatement().bind(url));
+        List<String> ret = new ArrayList<>();
+
+        for (Row r : rs) {
+            ret.add(r.getString("url"));
+        }
+
+        return ret;
+    }
+
     private Optional<CrawlReport> getOneCrawlReport(BoundStatement bs) {
         ResultSet rs = session.execute(bs);
 
@@ -93,7 +106,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     /**
      * Convert a Cassandra row [map and UDT] to the Link POJO
      * @param r row to convert
-     * @return
+     * @return List of Link POJOs in the Row
      */
     private List<Link> extractLinksFromRow(Row r) {
         return r.getMap("links", String.class, UDTValue.class).values()
@@ -106,7 +119,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
      * Given a list of Link POJOs, translate them to a map of UDT's that
      * can be inserted into Cassandra
      * @param links links to convert
-     * @return
+     * @return String -> UDTValue map that can be sent to Cassandra
      */
     private Map<String, UDTValue> serializeLinkToUdt(List<Link> links) {
         UserType linkType =
@@ -167,6 +180,16 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
         }
 
         return findByUuidStatement;
+    }
+
+    protected PreparedStatement getFindLatestLinksStatement() {
+        if (findByLatestLinkStatement == null) {
+            findByLatestLinkStatement = session.prepare(
+                    "SELECT url FROM latest_crawl_report WHERE links CONTAINS KEY ?"
+            );
+        }
+
+        return findByLatestLinkStatement;
     }
 
 }

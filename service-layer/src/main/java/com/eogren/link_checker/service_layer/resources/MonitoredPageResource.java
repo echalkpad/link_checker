@@ -3,15 +3,23 @@ package com.eogren.link_checker.service_layer.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.eogren.link_checker.service_layer.api.APIStatus;
 import com.eogren.link_checker.service_layer.api.APIStatusException;
+import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
+import com.eogren.link_checker.service_layer.data.CrawlReportRepository;
 import com.eogren.link_checker.service_layer.data.MonitoredPageRepository;
 import com.wordnik.swagger.annotations.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.URL;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Path("/api/v1/monitored_page")
 @Api(value="/api/v1/monitored_page", description="Deal with monitored pages")
@@ -20,15 +28,17 @@ import java.util.List;
  * RootPageResource represents the API calls necessary to deal with RootPages.
  */
 public class MonitoredPageResource {
-    private final MonitoredPageRepository repository;
-
+    private final MonitoredPageRepository monitoredPageRepository;
+    private final CrawlReportRepository crawlReportRepository;
+    private static final Logger logger = LoggerFactory.getLogger(MonitoredPageResource.class);
     /**
      * Create a RootPageResource handler that will use the given repository.
      *
-     * @param repository Repository that stores/retrieves information about Root Pages.
+     * @param monitoredPageRepository Repository that stores/retrieves information about Root Pages.
      */
-    public MonitoredPageResource(MonitoredPageRepository repository) {
-        this.repository = repository;
+    public MonitoredPageResource(MonitoredPageRepository monitoredPageRepository, CrawlReportRepository crawlReportRepository) {
+        this.monitoredPageRepository = monitoredPageRepository;
+        this.crawlReportRepository = crawlReportRepository;
     }
 
     @GET
@@ -46,7 +56,7 @@ public class MonitoredPageResource {
         // TODO: Could possibly use better caching too; this should stop the client from getting a bunch of data
         // when the ETag hasn't changed, but the server is still doing all the work to calculate it
         // in the first place.
-        List<MonitoredPage> body = repository.getAllMonitoredPages();
+        List<MonitoredPage> body = monitoredPageRepository.getAllMonitoredPages();
 
         // TODO: Refactor etag/cc into own function
         EntityTag etag = new EntityTag(String.valueOf(body.hashCode()));
@@ -84,7 +94,7 @@ public class MonitoredPageResource {
             );
         }
 
-        repository.addMonitoredPage(newPage);
+        monitoredPageRepository.addMonitoredPage(newPage);
         return new APIStatus(true, String.format("Successfully added %s", url));
 
     }
@@ -98,11 +108,11 @@ public class MonitoredPageResource {
      * Delete a Page from the system. The root page URL is used as the key.
      */
     public APIStatus deleteRootPage(@ApiParam(value="URL to delete") @PathParam("url") String url) {
-        if (!repository.pageAlreadyMonitored(url)) {
+        if (!monitoredPageRepository.pageAlreadyMonitored(url)) {
             throw new APIStatusException(new APIStatus(false, "Resource not found"), 404);
         }
 
-        repository.deleteMonitoredPage(url);
+        monitoredPageRepository.deleteMonitoredPage(url);
         return new APIStatus(true, "Deleted successfully.");
     }
 
@@ -111,8 +121,24 @@ public class MonitoredPageResource {
     @Path("/search")
     @ApiOperation(value="Search for monitored pages that meet the given criteria.")
     public List<MonitoredPage> searchForMonitoredPages(
-            @ApiParam(value="Filter to pages that link to a given page") @DefaultValue("") @QueryParam("links_to") String links_to
+            @ApiParam(value="Filter to pages that link to a given page", required=true)
+            @NotEmpty
+            @URL
+            @QueryParam("links_to") String links_to
     ) {
-        return new ArrayList<>();
+        // 1. Retrieve the list of crawled pages that link to links_to. Note that pages
+        // implicitly link to themselves.
+        //
+        // 2. Intersect that list with the list of monitored pages
+        //
+        // TODO: This impl may be inefficient - # of monitored pages is probably smaller
+        // than step 1.
+
+        Set<String> crawled_pages = new HashSet<>(crawlReportRepository.getLatestLinksFor(links_to));
+        crawled_pages.add(links_to);
+
+        logger.debug(String.format("searchForMonitoredPages: crawled_pages is %s", crawled_pages.toString()));
+
+        return monitoredPageRepository.findByUrl(crawled_pages);
     }
 }

@@ -13,9 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -63,8 +61,7 @@ public class CrawlStatusRepositoryTest {
     public void testCanAddAndThenRetrieve() {
         final String url = "http://www.cnn.com";
 
-        CrawlReport cr = createCrawlReport(url);
-        cr.getLinks().add(new Link("http://www.hello.com", "Hello There"));
+        CrawlReport cr = createCrawlReport(url, new Link("http://www.hello.com", "Hello There") );
 
         String uuid = repo.addCrawlReport(cr);
 
@@ -82,9 +79,31 @@ public class CrawlStatusRepositoryTest {
         assertCrawlReportsEqual(cr, cr3);
     }
 
+    @Test
+    public void testReturnsEmptyLinkedIn() {
+        List<String> reports = repo.getLatestLinksFor("http://www.doesntexist.com");
+        assertEquals("Expected 0 returns", 0, reports.size());
+    }
 
-    protected CrawlReport createCrawlReport(String url) {
-        return new CrawlReport(url, DateTime.now(), null, 200, new ArrayList<>());
+
+    @Test
+    public void testRetrievesLatest() {
+        final String target_page = "http://www.linked_to.com";
+
+        final String url1 = "http://www.page1.com";
+        final String url2 = "http://www.page2.com";
+
+        repo.addCrawlReport(createCrawlReport(url1, new Link(target_page, "Older link")));
+        repo.addCrawlReport(createCrawlReport(url1, new Link("http://www.somewhereelse.com", "Different link")));
+        repo.addCrawlReport(createCrawlReport(url2, new Link(target_page, "Second link")));
+
+        List<String> reports = repo.getLatestLinksFor(target_page);
+        assertEquals("Expected latest links to have size 1", 1, reports.size());
+        assertEquals("Expected " + url2 + " to be URL returned", url2, reports.get(0));
+    }
+
+    protected CrawlReport createCrawlReport(String url, Link... links) {
+        return new CrawlReport(url, DateTime.now(), null, 200, Arrays.asList(links));
     }
 
     protected void assertCrawlReportsEqual(CrawlReport cr1, CrawlReport cr2) {

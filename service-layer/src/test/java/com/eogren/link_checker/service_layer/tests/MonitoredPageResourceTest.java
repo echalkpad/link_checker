@@ -31,7 +31,7 @@ public class MonitoredPageResourceTest {
         };
 
         repo = new InMemoryMonitoredPageRepository();
-        sut = new MonitoredPageResource(repo);
+        sut = new MonitoredPageResource(repo, null);
     }
 
     @Test

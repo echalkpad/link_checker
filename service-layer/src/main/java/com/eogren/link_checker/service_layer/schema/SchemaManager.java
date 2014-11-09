@@ -45,6 +45,8 @@ public class SchemaManager {
                             "PRIMARY KEY (url)" +
                             ");"
             );
+
+            executeIgnoreNotExists(session, "CREATE INDEX latest_report_index ON latest_crawl_report(KEYS(links))");
             executeIgnoreNotExists(session, "INSERT INTO meta_data (key, value) VALUES ('db_version', '1');");
         } catch (QueryValidationException | QueryExecutionException | NoHostAvailableException ex) {
             System.out.println(ex.getMessage());

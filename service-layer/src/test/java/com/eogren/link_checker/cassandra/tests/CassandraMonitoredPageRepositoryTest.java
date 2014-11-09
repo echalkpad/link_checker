@@ -11,7 +11,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -33,7 +35,6 @@ public class CassandraMonitoredPageRepositoryTest {
 
         session = Cluster.builder().addContactPoint(cluster).build().connect();
         String q = "CREATE KEYSPACE " + keyspace + " WITH replication={'class':'SimpleStrategy', 'replication_factor': 1};";
-        System.out.println(q);
         session.execute(q);
         session.execute("USE " + keyspace + ";");
 
@@ -73,6 +74,22 @@ public class CassandraMonitoredPageRepositoryTest {
         List<MonitoredPage> all_pages = repo.getAllMonitoredPages();
         assertEquals("Expected all_pages to have 1 element", 1, all_pages.size());
         assertEquals("Expected all_pages[0] to have url " + pageUrl, pageUrl, all_pages.get(0).getUrl());
+    }
+
+    @Test
+    public void testCanFilter() {
+        repo.addMonitoredPage(createMonitoredPage("http://www.cnn.com"));
+        repo.addMonitoredPage(createMonitoredPage("http://www.nytimes.com"));
+
+        Set<String> testUrls = new HashSet<>();
+        testUrls.add("http://www.cnn.com");
+        testUrls.add("http://www.someother.page.com");
+        testUrls.add("http://www.athirdpage.com");
+
+        List<MonitoredPage> res = repo.findByUrl(testUrls);
+
+        assertEquals("Expected to find only 1 filtered page", 1, res.size());
+        assertEquals("Expected URL match", "http://www.cnn.com", res.get(0).getUrl());
     }
 
     private MonitoredPage createMonitoredPage(String pageUrl) {

@@ -2,6 +2,7 @@ package com.eogren.link_checker.service_layer.data;
 
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface MonitoredPageRepository {
@@ -10,6 +11,13 @@ public interface MonitoredPageRepository {
      * @return A list of RootPages contained in the repository.
      */
     List<MonitoredPage> getAllMonitoredPages();
+
+    /**
+     * Filter a url list to those that are actually monitored page
+     * @param urlList URLs to scan
+     * @return Monitored page objects that correspond to the correct ones.
+     */
+    List<MonitoredPage> findByUrl(Collection<String> urlList);
 
     /**
      * Add a new page to the repository.

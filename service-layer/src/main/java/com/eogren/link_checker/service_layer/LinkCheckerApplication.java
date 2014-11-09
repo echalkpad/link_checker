@@ -54,7 +54,7 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
         messageEmitter = EmitterFactory.create(config.getKafkaConfig());
 
         // API Resources
-        environment.jersey().register(new MonitoredPageResource(getMonitoredPageRepository(config)));
+        environment.jersey().register(new MonitoredPageResource(getMonitoredPageRepository(config), getCrawlReportRepository(config)));
         environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config), messageEmitter));
 
         // Health checks
