@@ -4,12 +4,12 @@ import com.eogren.link_checker.protobuf.ScraperMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ScraperMessageConsumer {
+public class ScraperMessageProcessor {
 
-    public final Logger logger = LoggerFactory.getLogger(ScraperMessageConsumer.class);
+    public final Logger logger = LoggerFactory.getLogger(ScraperMessageProcessor.class);
 
     public void consumeScraperMessage(ScraperMessages.ScraperMessage msg) {
-        logger.debug("Consuming msg type %s", msg.getType().toString());
+        logger.debug(String.format("Consuming msg type %s", msg.getType().toString()));
 
         switch (msg.getType()) {
         case SCRAPE_REQUEST:

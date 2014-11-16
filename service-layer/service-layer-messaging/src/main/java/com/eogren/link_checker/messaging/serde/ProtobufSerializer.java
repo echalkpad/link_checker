@@ -2,6 +2,7 @@ package com.eogren.link_checker.messaging.serde;
 
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.Optional;
 
@@ -39,5 +40,19 @@ public class ProtobufSerializer {
                 .setUpdate(b.build())
                 .build()
                 .toByteArray();
+    }
+
+    /**
+     * Deserialize a scraper message from a byte stream
+     * @param rawData Byte stream to decode
+     * @throws java.lang.IllegalArgumentException If the byte stream cannot be properly decoded
+     * @return Decoded ScraperMessage
+     */
+    public static ScraperMessages.ScraperMessage deserializeScraperMessage(byte[] rawData) {
+        try {
+            return ScraperMessages.ScraperMessage.parseFrom(rawData);
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Bad bytestream; could not deserialize message");
+        }
     }
 }

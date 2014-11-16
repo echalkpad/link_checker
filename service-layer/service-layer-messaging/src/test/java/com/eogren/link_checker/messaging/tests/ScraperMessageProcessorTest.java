@@ -1,22 +1,22 @@
 package com.eogren.link_checker.messaging.tests;
 
-import com.eogren.link_checker.messaging.consumer.ScraperMessageConsumer;
+import com.eogren.link_checker.messaging.consumer.ScraperMessageProcessor;
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
-public class ScraperMessageConsumerTest
+public class ScraperMessageProcessorTest
 {
-    protected LoggingConsumer consumer;
+    protected LoggingProcessor consumer;
 
-    public class LoggingConsumer extends ScraperMessageConsumer {
+    public class LoggingProcessor extends ScraperMessageProcessor {
         public boolean requestSeen;
         public boolean responseSeen;
         public boolean updateSeen;
 
-        public LoggingConsumer() {
+        public LoggingProcessor() {
             this.requestSeen = false;
             this.responseSeen = false;
             this.updateSeen = false;
@@ -43,7 +43,7 @@ public class ScraperMessageConsumerTest
 
     @Before
     public void createConsumer() {
-        consumer = new LoggingConsumer();
+        consumer = new LoggingProcessor();
     }
 
     @Test
