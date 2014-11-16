@@ -1,4 +1,4 @@
-package com.eogren.link_checker.messaging;
+package com.eogren.link_checker.messaging.producer;
 
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 

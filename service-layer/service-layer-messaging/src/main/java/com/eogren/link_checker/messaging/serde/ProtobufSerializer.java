@@ -1,4 +1,4 @@
-package com.eogren.link_checker.messaging;
+package com.eogren.link_checker.messaging.serde;
 
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import com.eogren.link_checker.service_layer.api.CrawlReport;

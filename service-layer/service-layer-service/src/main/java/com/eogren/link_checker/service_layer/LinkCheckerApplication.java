@@ -1,7 +1,7 @@
 package com.eogren.link_checker.service_layer;
 
-import com.eogren.link_checker.messaging.EmitterFactory;
-import com.eogren.link_checker.messaging.MessageEmitter;
+import com.eogren.link_checker.messaging.producer.EmitterFactory;
+import com.eogren.link_checker.messaging.producer.MessageEmitter;
 import com.eogren.link_checker.service_layer.commands.CreateSchemaCommand;
 import com.eogren.link_checker.service_layer.data.*;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;

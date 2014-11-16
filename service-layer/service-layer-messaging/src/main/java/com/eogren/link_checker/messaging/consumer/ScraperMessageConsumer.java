@@ -1,4 +1,4 @@
-package com.eogren.link_checker.messaging;
+package com.eogren.link_checker.messaging.consumer;
 
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import org.slf4j.Logger;

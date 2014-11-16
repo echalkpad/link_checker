@@ -1,6 +1,6 @@
-package com.eogren.link_checker.messaging;
+package com.eogren.link_checker.messaging.producer;
 
-import com.eogren.link_checker.protobuf.ScraperMessages;
+import com.eogren.link_checker.messaging.serde.ProtobufSerializer;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.config.KafkaConfig;
 import kafka.producer.KeyedMessage;

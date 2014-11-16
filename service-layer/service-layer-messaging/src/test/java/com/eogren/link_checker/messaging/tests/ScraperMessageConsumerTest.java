@@ -1,6 +1,6 @@
 package com.eogren.link_checker.messaging.tests;
 
-import com.eogren.link_checker.messaging.ScraperMessageConsumer;
+import com.eogren.link_checker.messaging.consumer.ScraperMessageConsumer;
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import org.junit.Before;
 import org.junit.Test;
