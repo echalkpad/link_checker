@@ -1,9 +1,9 @@
 package com.eogren.link_checker.status_updater;
 
 import ch.qos.logback.classic.Level;
+import com.eogren.link_checker.service_layer.api.MonitoredPage;
+import com.eogren.link_checker.service_layer.client.ApiClient;
 import com.eogren.link_checker.status_updater.config.StatusUpdaterConfig;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
@@ -14,21 +14,34 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 public class StatusUpdaterApplication {
     public static final Logger logger = LoggerFactory.getLogger(StatusUpdaterApplication.class);
 
     protected final StatusUpdaterConfig config;
+    protected final ApiClient apiClient;
 
     public StatusUpdaterApplication(String configFile) {
         config = createConfig(configFile);
 
+        apiClient = createApiClient(config);
+
         logger.info("I'm alive!!");
-        logger.debug(String.format("ZK address: %s", config.getKafkaConfig().getZkAddress()));
-        logger.debug(String.format("Type: %s", config.getKafkaConfig().getType()));
-        logger.debug(String.format("Prefix: %s", config.getKafkaConfig().getPrefix()));
-        logger.debug(String.format("Num threads: %d", config.getKafkaConfig().getNumThreads()));
+        try {
+            List<MonitoredPage> pages = apiClient.getMonitoredPagesForLink("http://www.cnn.com");
+            for (MonitoredPage page : pages) {
+                System.out.println(page);
+            }
+        } catch (IOException e) {
+            System.out.println("IO Error! " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    protected ApiClient createApiClient(StatusUpdaterConfig config) {
+        return new ApiClient(config.getDataApiConfig().getDataApiHost());
     }
 
     protected static StatusUpdaterConfig createConfig(String configFile) {
@@ -51,7 +64,7 @@ public class StatusUpdaterApplication {
     }
 
     protected static String buildConstraintMessages(Set<ConstraintViolation<StatusUpdaterConfig>> violations) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("Failed to parse config file:\n");
         for (ConstraintViolation<StatusUpdaterConfig> violation : violations) {
             sb.append(String.format("%s %s\n", violation.getPropertyPath().toString(), violation.getMessage()));
@@ -70,7 +83,7 @@ public class StatusUpdaterApplication {
             logger.setLevel(Level.DEBUG);
         }
 
-        StatusUpdaterApplication app = new StatusUpdaterApplication(args[args.length - 1]);
+        new StatusUpdaterApplication(args[args.length - 1]);
     }
 
     protected static boolean isVerbose(String[] args) {
