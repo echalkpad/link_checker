@@ -27,6 +27,10 @@ public class KafkaConfig {
         return (type == null) ? "default" : type;
     }
 
+    public KafkaConfig() {
+        // for automated parsing
+    }
+
     public KafkaConfig(String brokerList, String zkAddress, String prefix, String type) {
         this.brokerList = brokerList;
         this.zkAddress = zkAddress;
