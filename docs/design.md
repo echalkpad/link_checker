@@ -44,11 +44,21 @@ The Link Checker service is a monitoring tool that monitors a set of URLs for br
  
  Allows users to add monitored pages / see their status in real time.
  
+
+# System Components
+
 ## Messaging Infrastructure
  
-Kafka and Protobuf (mainly because Avro doesn't seem to have solid support for Go)
+Kafka and Protobuf are used to send messages between the various components in the system. Kafka's persistence is set high enough so that if the crawl scheduler or status update die or need to be updated they can easily pick up from the last log message left off.
 
-TODO: fillin details
+## Service Layer
+
+The service-layer contains most of the coordination code for the link_checker project. It is 
+generally responsible for persisting or retrieving any data from Cassandra and also emitting updates when new data is posted.
+
+No other components should be directly interacting with Cassandra, nor should they emit any Kafka events themselves that talk about data changing in the system -- this way the service layer can maintain transactional guarantees.
+
+API docs are generated using Swagger and are available at http://localhost:8080/api-docs.
 
 ## Crawler
 
@@ -60,6 +70,8 @@ The crawler is responsible for:
  * Parsing the HTML output and extracting any href links
  
 ## Crawl Scheduler
+
+TODO fillin
  
 ## Status Updater
 
@@ -83,3 +95,7 @@ To think about:
  	* And processing cost is only slightly more expensive unless a new link is discovered on a monitored page (or one goes away)
 
 Status updater v1: Ignore any optimization tricks until we know they are needed. Just pull all links when a page changes status and update any monitored pages appropriately.
+
+# Data Design
+
+TODO fillin
