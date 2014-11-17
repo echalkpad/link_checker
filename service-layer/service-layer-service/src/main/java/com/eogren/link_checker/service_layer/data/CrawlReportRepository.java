@@ -2,7 +2,9 @@ package com.eogren.link_checker.service_layer.data;
 
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,6 +24,14 @@ public interface CrawlReportRepository {
      * @return CrawlReport if it exists; null if the URL has not yet been crawled
      */
     public Optional<CrawlReport> getLatestStatus(String url);
+
+    /**
+     * Retrieve the latest crawl report for a set of URLs.
+     * @param urls List of URLs to retrieve
+     * @return List of CrawlReports for URLs. [If urls contains a URL that has not yet been crawled
+     * then that URL will not be present in the returned list.]
+     */
+    public List<CrawlReport> getLatestStatus(Collection<String> urls);
 
     /**
      * Retrieve a crawl report by UUID.

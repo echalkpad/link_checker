@@ -105,6 +105,25 @@ public class CrawlStatusRepositoryTest {
         assertEquals("Expected " + url2 + " to be URL returned", url2, reports.get(0));
     }
 
+    @Test
+    public void testRetrieveMultipleHandlesBogusPages() {
+        final String url1 = "http://www.page1.com";
+        final String url2 = "http://www.page2.com";
+
+        repo.addCrawlReport(createCrawlReport(url1, new Link("http://www.somewhere.com", "Older link")));
+        repo.addCrawlReport(createCrawlReport(url2, new Link("http://www.somewhereelse.com", "Different link")));
+
+        String[] urls = {
+                "http://www.bs.com",
+                "http://www.definitely.does.not.exist",
+                url1
+        };
+
+        List<CrawlReport> cr = repo.getLatestStatus(Arrays.asList(urls));
+        assertEquals(1, cr.size());
+        assertEquals(cr.get(0).getUrl(), url1);
+    }
+
     protected CrawlReport createCrawlReport(String url, Link... links) {
         return new CrawlReport(url, DateTime.now(), null, 200, Arrays.asList(links));
     }

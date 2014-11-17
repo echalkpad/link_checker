@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 
 public class CassandraCrawlReportRepository implements CrawlReportRepository {
     private final Session session;
+    protected final String selectPrefix = "SELECT url, date, error, status_code, links FROM ";
+    protected final String selectLatestPrefix = selectPrefix + "latest_crawl_report";
+    protected final String selectAnyPrefix = selectPrefix + "crawl_report";
 
     private PreparedStatement insertCrawlReportStatement;
     private PreparedStatement insertLatestCrawlReportStatement;
@@ -59,6 +62,26 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     public Optional<CrawlReport> getLatestStatus(String url) {
         BoundStatement bs = getFindLatestStatement().bind(url);
         return getOneCrawlReport(bs);
+    }
+
+    @Override
+    @Timed
+    public List<CrawlReport> getLatestStatus(Collection<String> urls) {
+        List<CrawlReport> ret = new ArrayList<>();
+
+        String[] urlArr = new String[urls.size()];
+        urls.toArray(urlArr);
+
+        List<String> questionMarks = urls.stream().map(x -> "?").collect(Collectors.toList());
+        String query =
+                selectLatestPrefix + " WHERE url IN (" + String.join(",", questionMarks) + ")";
+
+        ResultSet rows = session.execute(query, urlArr);
+        for (Row r : rows) {
+            ret.add(deserializeCrawlReport(r));
+        }
+
+        return ret;
     }
 
 
@@ -165,7 +188,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     protected PreparedStatement getFindLatestStatement() {
         if (findLatestStatement == null) {
             findLatestStatement = session.prepare(
-                    "SELECT url, date, error, status_code, links FROM latest_crawl_report WHERE url = ?"
+                    selectLatestPrefix + " WHERE url = ?"
             );
         }
 
@@ -175,7 +198,7 @@ public class CassandraCrawlReportRepository implements CrawlReportRepository {
     protected PreparedStatement getFindByUuidStatement() {
         if (findByUuidStatement == null) {
             findByUuidStatement = session.prepare(
-                    "SELECT url, date, error, status_code, links FROM crawl_report WHERE url = ? AND date = ?"
+                    selectAnyPrefix + " WHERE url = ? AND date = ?"
             );
         }
 

@@ -26,6 +26,8 @@ import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -125,6 +127,42 @@ public class LinkSearchTest {
         }
     }
 
+    @Test
+    public void testCrawlReportSearch() {
+        final String target_url = "http://www.target.com";
+
+        List<Link> target_links = new ArrayList<>();
+        target_links.add(new Link("http://www.link1.com", "Link1 1"));
+        target_links.add(new Link("http://www.cnn.com", "CNN"));
+
+        List<Link> empty_link = new ArrayList<>();
+
+        try {
+            Client client = getClient();
+
+            postCrawlReport(client, target_url, target_links);
+            for (Link l : target_links) {
+                postCrawlReport(client, l.getUrl(), empty_link);
+            }
+
+            List<CrawlReport> response =
+                    getResource(client, crPrefix + "search?links_from=" + target_url)
+                            .get(new GenericType<List<CrawlReport>>() {
+                            });
+
+
+            assertEquals("Expected found monitored pages to match", target_links.size(), response.size() - 1);
+
+            Set<String> foundUrls = response.stream().map(CrawlReport::getUrl).collect(Collectors.toSet());
+            assertTrue("Expected URL to link to itself", foundUrls.contains(target_url));
+            for (Link l : target_links) {
+                assertTrue("Expected URLs to be in set", foundUrls.contains(l.getUrl()));
+            }
+
+        } catch (UniformInterfaceException uie) {
+            uieHandler(uie);
+        }
+    }
     private void postCrawlReport(Client client, String crawled_url, List<Link> links) {
         CrawlReport crp = new CrawlReport(
                 crawled_url,
