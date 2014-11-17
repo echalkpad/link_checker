@@ -30,7 +30,7 @@ public class StatusUpdaterApplication {
 
         logger.info("I'm alive!!");
         try {
-            List<MonitoredPage> pages = apiClient.getMonitoredPagesForLink("http://www.cnn.com");
+            List<MonitoredPage> pages = apiClient.getMonitoredPagesThatLinkTo("http://www.cnn.com");
             for (MonitoredPage page : pages) {
                 System.out.println(page);
             }
