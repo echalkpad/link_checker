@@ -61,10 +61,26 @@ public class TestUtils {
         return Client.create(clientConfig);
     }
 
+    public static void addMonitoredPage(String url, DropwizardAppRule<LinkCheckerConfiguration> rule) {
+       addMonitoredPage(getClient(), url, rule);
+    }
+
     public static void addMonitoredPage(Client client, String url, DropwizardAppRule<LinkCheckerConfiguration> rule) {
         getResource(client, TestUtils.mpPrefix + url, rule)
                 .entity(new MonitoredPage(url), MediaType.APPLICATION_JSON)
                 .put();
     }
 
+    public static MonitoredPage getMonitoredPage(String url, DropwizardAppRule<LinkCheckerConfiguration> rule) {
+        return getResource(getClient(), TestUtils.mpPrefix + url, rule)
+                .get(MonitoredPage.class);
+    }
+
+    public static void updateMonitoredPage(String url, MonitoredPage.Status newState, DropwizardAppRule<LinkCheckerConfiguration> rule) {
+        MonitoredPage updatedPage = new MonitoredPage(url, newState);
+
+        getResource(getClient(), TestUtils.mpPrefix + url, rule)
+                .entity(updatedPage, MediaType.APPLICATION_JSON)
+                .put();
+    }
 }

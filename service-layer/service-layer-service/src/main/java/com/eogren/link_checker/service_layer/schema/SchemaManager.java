@@ -29,7 +29,10 @@ public class SchemaManager {
 
     private void createMonitoredPageTables() {
         executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS root_page( " +
-                "url text PRIMARY KEY );");
+                "url text PRIMARY KEY, " +
+                "last_updated timestamp, " +
+                "status int" +
+                ");");
     }
 
     private void createMetadataTables() {

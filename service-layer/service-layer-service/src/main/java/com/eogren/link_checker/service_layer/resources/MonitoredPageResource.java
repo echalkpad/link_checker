@@ -16,10 +16,7 @@ import org.hibernate.validator.constraints.URL;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Path("/api/v1/monitored_page")
 @Api(value="/api/v1/monitored_page", description="Deal with monitored pages")
@@ -72,6 +69,23 @@ public class MonitoredPageResource {
         } else {
             return Response.ok(body).cacheControl(cc).tag(etag).build();
         }
+    }
+
+    @GET
+    @Timed
+    @Path("/{url: .*}")
+    @ApiOperation(value = "Retrieve one Monitored Page")
+    @ApiResponses(value = { @ApiResponse(code=404, message="Monitored Page doesn't exist")})
+    public MonitoredPage getOne(@ApiParam(value="URL to retrieve", required=true) @PathParam("url") String url) {
+        Optional<MonitoredPage> mp = monitoredPageRepository.findByUrl(url);
+
+        if (!mp.isPresent()) {
+            throw new APIStatusException(
+                    new APIStatus(false, "Monitored Page does not exist"), 404
+            );
+        }
+
+        return mp.get();
     }
 
     @PUT

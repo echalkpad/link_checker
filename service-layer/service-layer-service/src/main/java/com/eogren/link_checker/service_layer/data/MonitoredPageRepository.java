@@ -4,6 +4,7 @@ import com.eogren.link_checker.service_layer.api.MonitoredPage;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface MonitoredPageRepository {
     /**
@@ -11,6 +12,13 @@ public interface MonitoredPageRepository {
      * @return A list of RootPages contained in the repository.
      */
     List<MonitoredPage> getAllMonitoredPages();
+
+    /**
+     * Find the MonitoredPage for a given url.
+     * @param url URL to look for.
+     * @return Either empty optional or the found MonitoredPage
+     */
+    Optional<MonitoredPage> findByUrl(String url);
 
     /**
      * Filter a url list to those that are actually monitored page

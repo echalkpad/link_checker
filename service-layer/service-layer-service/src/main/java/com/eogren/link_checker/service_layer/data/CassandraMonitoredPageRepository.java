@@ -4,17 +4,19 @@ import com.codahale.metrics.annotation.Timed;
 import com.datastax.driver.core.*;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
-import com.eogren.link_checker.service_layer.api.Page;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.*;
 
 public class CassandraMonitoredPageRepository implements MonitoredPageRepository {
+    protected final Logger logger = LoggerFactory.getLogger(CassandraMonitoredPageRepository.class);
+
     protected Session session;
 
     protected PreparedStatement preparedInsertStatement;
@@ -32,12 +34,13 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
     @Override
     @Timed
     public List<MonitoredPage> getAllMonitoredPages() {
+        logger.debug("Retrieving all monitored pages");
         ArrayList<MonitoredPage> ret = new ArrayList<>();
 
-        ResultSet rs = session.execute("SELECT url from root_page;");
+        ResultSet rs = session.execute("SELECT url, last_updated, status FROM root_page;");
 
         for (Row r : rs) {
-            ret.add(new MonitoredPage(r.getString("url")));
+            ret.add(createMonitoredPageFromRow(r));
         }
 
         return ret;
@@ -47,23 +50,31 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
     @Timed
     public void addMonitoredPage(MonitoredPage newPage) {
         BoundStatement bs = new BoundStatement(getPreparedInsertStatement());
-        session.execute(bs.bind(newPage.getUrl()));
+        logger.debug(String.format("About to insert url %s, last updated %s, status %s",
+                newPage.getUrl(),
+                newPage.getLastUpdated().toString(),
+                newPage.getStatus().toString()));
+
+        session.execute(bs.bind(newPage.getUrl(), newPage.getLastUpdated().toDate(), statusToInt(newPage.getStatus())));
     }
 
     @Override
     @Timed
     public void deleteMonitoredPage(String url) {
         BoundStatement bs = new BoundStatement(getPreparedDeleteStatement());
+        logger.debug(String.format("Deleting monitored page %s", url));
         session.execute(bs.bind(url));
     }
 
     @Override
     @Timed
     public boolean pageAlreadyMonitored(String url) {
-        BoundStatement bs = new BoundStatement(getPreparedExistsStatement());
-        ResultSet rs = session.execute(bs.bind(url));
+        // XXX intentionally doing extra work here just to keep code
+        // simpler; don't actually need to deserialize a MonitoredPage out of the
+        // row
+        Optional<MonitoredPage> mp = findByUrl(url);
+        return mp.isPresent();
 
-        return (rs.one() != null);
     }
 
     @Override
@@ -87,9 +98,46 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
         return ret;
     }
 
+    @Override
+    @Timed
+    public Optional<MonitoredPage> findByUrl(String url) {
+        BoundStatement bs = new BoundStatement(getOneUrl());
+        ResultSet rs = session.execute(bs.bind(url));
+
+        Row r = rs.one();
+        if (r == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(createMonitoredPageFromRow(r));
+    }
+
+    protected int statusToInt(MonitoredPage.Status status) {
+        return status.ordinal();
+    }
+
+    protected MonitoredPage.Status statusFromInt(int val) {
+        return MonitoredPage.Status.values()[val];
+    }
+
+    protected MonitoredPage createMonitoredPageFromRow(Row r) {
+        MonitoredPage ret = new MonitoredPage(
+                r.getString("url"),
+                statusFromInt(r.getInt("status")),
+                new DateTime(r.getDate("last_updated")));
+
+        logger.debug(String.format("Deserializing row url: %s status: %d date: %s ret: %s",
+                r.getString("url"),
+                r.getInt("status"),
+                r.getDate("last_updated"),
+                ret.toString()));
+
+        return ret;
+    }
+
     protected PreparedStatement getPreparedInsertStatement() {
         if (preparedInsertStatement == null) {
-            preparedInsertStatement = session.prepare("INSERT INTO root_page (url) VALUES (?);");
+            preparedInsertStatement = session.prepare("INSERT INTO root_page (url, last_updated, status) VALUES (?, ?, ?);");
         }
 
         return preparedInsertStatement;
@@ -103,9 +151,9 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
         return preparedDeleteStatement;
     }
 
-    protected PreparedStatement getPreparedExistsStatement() {
+    protected PreparedStatement getOneUrl() {
         if (preparedExistsStatement == null) {
-            preparedExistsStatement = session.prepare("SELECT url from root_page WHERE url = ?;");
+            preparedExistsStatement = session.prepare("SELECT url, last_updated, status from root_page WHERE url = ?;");
         }
 
         return preparedExistsStatement;
