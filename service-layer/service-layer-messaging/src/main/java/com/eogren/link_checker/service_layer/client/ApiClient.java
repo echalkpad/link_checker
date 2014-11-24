@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
@@ -18,6 +21,7 @@ import java.util.List;
 public class ApiClient {
     private final String baseUrl;
     private final CloseableHttpClient httpClient;
+    protected final ObjectMapper mapper;
 
 
     /**
@@ -32,6 +36,7 @@ public class ApiClient {
 
         this.baseUrl = baseUrl;
         httpClient = HttpClients.createDefault();
+        mapper = new ObjectMapper();
     }
 
     /**
@@ -50,8 +55,6 @@ public class ApiClient {
             }
 
             HttpEntity entity = response.getEntity();
-
-            ObjectMapper mapper = new ObjectMapper();
 
             return mapper.readValue(
                     entity.getContent(),
@@ -74,8 +77,6 @@ public class ApiClient {
 
             HttpEntity entity = response.getEntity();
 
-            ObjectMapper mapper = new ObjectMapper();
-
             return mapper.readValue(
                     entity.getContent(),
                     mapper.getTypeFactory().constructCollectionType(List.class, CrawlReport.class));
@@ -87,8 +88,20 @@ public class ApiClient {
      * @param page MonitoredPage to update
      * @param pageStatus New status to set
      */
-    public void updateMonitoredPageStatus(MonitoredPage page, MonitoredPage.Status pageStatus) {
+    public void updateMonitoredPageStatus(MonitoredPage page, MonitoredPage.Status pageStatus) throws IOException {
+        MonitoredPage updateReq = new MonitoredPage(page.getUrl(), pageStatus);
 
+        HttpPut req = new HttpPut(getUrl("/api/v1/monitored_page/" + updateReq.getUrl()));
+
+        String json = mapper.writeValueAsString(updateReq);
+
+        req.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
+
+        try (CloseableHttpResponse response = httpClient.execute(req)) {
+            if (response.getStatusLine().getStatusCode() > 299) {
+                throw new IOException("API request to " + req.getURI().toString() + " returned error: " + response.getStatusLine().toString());
+            }
+        }
     }
 
     protected String getUrl(String path) {

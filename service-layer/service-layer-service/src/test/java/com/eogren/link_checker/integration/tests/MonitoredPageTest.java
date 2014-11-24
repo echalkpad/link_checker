@@ -3,6 +3,7 @@ package com.eogren.link_checker.integration.tests;
 import com.eogren.link_checker.service_layer.LinkCheckerApplication;
 import com.eogren.link_checker.service_layer.LinkCheckerConfiguration;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
+import com.eogren.link_checker.service_layer.client.ApiClient;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.schema.SchemaManager;
 import com.eogren.link_checker.tests.categories.IntegrationTest;
@@ -15,6 +16,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -48,7 +51,9 @@ public class MonitoredPageTest {
 
 
     @Test
-    public void testMonitoredPageDefaultsAndUpdate() {
+    public void testMonitoredPageDefaultsAndUpdate() throws IOException {
+        ApiClient c = new ApiClient("http://localhost:" + RULE.getLocalPort());
+
         final String url = "http://www.testpage.com";
         final MonitoredPage.Status newState = MonitoredPage.Status.GOOD;
 
@@ -62,7 +67,7 @@ public class MonitoredPageTest {
         assertTrue("Expected addTime to be before current date", addTime.isBeforeNow());
 
 
-        TestUtils.updateMonitoredPage(url, newState, RULE);
+        c.updateMonitoredPageStatus(mp, MonitoredPage.Status.GOOD);
         mp = TestUtils.getMonitoredPage(url, RULE);
 
         assertEquals("Expected URLs to match", url, mp.getUrl());
