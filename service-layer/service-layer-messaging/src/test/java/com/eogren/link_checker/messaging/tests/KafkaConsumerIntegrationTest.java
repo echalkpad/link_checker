@@ -104,7 +104,7 @@ public class KafkaConsumerIntegrationTest {
 
         consumer.stop();
         if (duration >= MAX_DURATION) {
-            fail("Waited too long to receive all " + urls.size() + " messages.");
+            fail("Waited too long to receive all " + urls.size() + " messages. Received" + testProcessor.getNumProcessed() + " out of " + urls.size());
         }
 
         assertEquals("Expected to receive exactly the right # of messages", urls.size(), testProcessor.getNumProcessed());
