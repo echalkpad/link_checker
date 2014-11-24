@@ -19,38 +19,50 @@ public class SchemaManager {
      */
     public void createSchema() {
         try {
-            executeIgnoreNotExists(session, "CREATE TYPE IF NOT EXISTS " + session.getLoggedKeyspace() + ".found_link ( " +
-                "url text, " +
-                "anchorText text " +
-            ");");
-
-            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS meta_data ( key text PRIMARY KEY, value text ) WITH comment='config metadata';");
-            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS root_page( " +
-                    "url text PRIMARY KEY );");
-            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS crawl_report( " +
-                            "url text, " +
-                            "date timeuuid, " +
-                            "error text, " +
-                            "status_code int, " +
-                            "links map<text, frozen <found_link>>, " +
-                            "PRIMARY KEY (url, date)" +
-                            ") WITH CLUSTERING ORDER BY (date DESC);"
-            );
-            executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS latest_crawl_report( " +
-                            "url text, " +
-                            "date timeuuid, " +
-                            "error text, " +
-                            "status_code int, " +
-                            "links map<text, frozen <found_link>>, " +
-                            "PRIMARY KEY (url)" +
-                            ");"
-            );
-
-            executeIgnoreNotExists(session, "CREATE INDEX latest_report_index ON latest_crawl_report(KEYS(links))");
-            executeIgnoreNotExists(session, "INSERT INTO meta_data (key, value) VALUES ('db_version', '1');");
+            createMetadataTables();
+            createMonitoredPageTables();
+            createCrawlReportTables();
         } catch (QueryValidationException | QueryExecutionException | NoHostAvailableException ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+    private void createMonitoredPageTables() {
+        executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS root_page( " +
+                "url text PRIMARY KEY );");
+    }
+
+    private void createMetadataTables() {
+        executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS meta_data ( key text PRIMARY KEY, value text ) WITH comment='config metadata';");
+        executeIgnoreNotExists(session, "INSERT INTO meta_data (key, value) VALUES ('db_version', '1');");
+    }
+
+    private void createCrawlReportTables() {
+        executeIgnoreNotExists(session, "CREATE TYPE IF NOT EXISTS " + session.getLoggedKeyspace() + ".found_link ( " +
+                "url text, " +
+                "anchorText text " +
+                ");");
+
+        executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS crawl_report( " +
+                        "url text, " +
+                        "date timeuuid, " +
+                        "error text, " +
+                        "status_code int, " +
+                        "links map<text, frozen <found_link>>, " +
+                        "PRIMARY KEY (url, date)" +
+                        ") WITH CLUSTERING ORDER BY (date DESC);"
+        );
+        executeIgnoreNotExists(session, "CREATE TABLE IF NOT EXISTS latest_crawl_report( " +
+                        "url text, " +
+                        "date timeuuid, " +
+                        "error text, " +
+                        "status_code int, " +
+                        "links map<text, frozen <found_link>>, " +
+                        "PRIMARY KEY (url)" +
+                        ");"
+        );
+
+        executeIgnoreNotExists(session, "CREATE INDEX latest_report_index ON latest_crawl_report(KEYS(links))");
     }
 
     public void dropSchema() {
