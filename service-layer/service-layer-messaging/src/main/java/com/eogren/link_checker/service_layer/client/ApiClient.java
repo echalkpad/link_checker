@@ -40,6 +40,12 @@ public class ApiClient {
     }
 
     /**
+     * Retrieve all Monitored Pages in the system
+     */
+    public List<MonitoredPage> retrieveAllMonitoredPages() throws IOException {
+        return getMonitoredPageListFromUrl(getUrl("/api/v1/monitored_page/"));
+    }
+    /**
      * Retrieve a list of Monitored Page objects that link to the given URL
      *
      * @param url URL to search on
@@ -48,7 +54,17 @@ public class ApiClient {
      *                     TODO: Name is super long
      */
     public List<MonitoredPage> getMonitoredPagesThatLinkTo(String url) throws IOException {
-        HttpGet req = new HttpGet(getUrl("/api/v1/monitored_page/search?links_to=" + url));
+       return getMonitoredPageListFromUrl(getUrl("/api/v1/monitored_page/search?links_to=" + url));
+    }
+
+    /**
+     * Helper function to send a get request to a url and parse the result into a MonitoredPage list
+     * @param url
+     * @return
+     * @throws IOException
+     */
+    protected List<MonitoredPage> getMonitoredPageListFromUrl(String url) throws IOException {
+        HttpGet req = new HttpGet(url);
         try (CloseableHttpResponse response = httpClient.execute(req)) {
             if (response.getStatusLine().getStatusCode() > 299) {
                 throw new IOException("API request to " + req.getURI().toString() + " returned error: " + response.getStatusLine().toString());
@@ -61,7 +77,6 @@ public class ApiClient {
                     mapper.getTypeFactory().constructCollectionType(List.class, MonitoredPage.class));
         }
     }
-
     /**
      * Retrieve the latest crawl reports for a URL + all of the pages it links to.
      *
