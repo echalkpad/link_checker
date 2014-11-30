@@ -14,6 +14,8 @@
         <module>service-layer-service</module>
         <module>service-layer-config</module>
         <module>status-updater</module>
+        <module>crawl-scheduler</module>
+        <module>test-utils</module>
     </modules>
 
     <properties>

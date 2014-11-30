@@ -23,18 +23,6 @@ public class TestUtils {
         }
     }
 
-
-    public static void checkFileExists(String name) {
-        File f = new File(kafkaShell + "/" + name);
-        if (!f.exists()) {
-            throw new RuntimeException("Required file " + f.getAbsolutePath() + " does not exist");
-        }
-
-        if (!f.canExecute()) {
-            throw new RuntimeException("Required file " + f.getAbsolutePath() + " must be executable");
-        }
-    }
-
     public static String getEnvWithDefault(String name, String defaultVal) {
         String ret = System.getenv(name);
         if (ret == null) {

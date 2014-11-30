@@ -7,6 +7,7 @@ import com.eogren.link_checker.messaging.producer.KafkaProducer;
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.config.KafkaConfig;
+import com.eogren.link_checker.test_utils.TestUtils;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -64,9 +65,9 @@ public class KafkaConsumerIntegrationTest {
 
     @BeforeClass
     public static void loadEnvironmentAndCheckPrereqs() {
-        zkAddress = getEnvWithDefault("ZOOKEEPER_ADDRESS", "localhost:2181");
-        brokerList = getEnvWithDefault("BROKER_ADDRESS", "localhost:9092");
-        kafkaShell = getEnvWithDefault("KAFKA_SHELL", "/opt/kafka/bin");
+        zkAddress = TestUtils.getEnvWithDefault("ZOOKEEPER_ADDRESS", "localhost:2181");
+        brokerList = TestUtils.getEnvWithDefault("BROKER_ADDRESS", "localhost:9092");
+        kafkaShell = TestUtils.getEnvWithDefault("KAFKA_SHELL", "/opt/kafka/bin");
 
         checkFileExists("kafka-topics.sh");
     }
@@ -125,7 +126,7 @@ public class KafkaConsumerIntegrationTest {
                 Utils.SCRAPER_TOPIC);
 
 
-        runWithTimeout(cmdLine, 3000, TimeUnit.MILLISECONDS);
+        TestUtils.runWithTimeout(cmdLine, 3000, TimeUnit.MILLISECONDS);
     }
 
     @After
@@ -141,6 +142,16 @@ public class KafkaConsumerIntegrationTest {
         return new CrawlReport(url, DateTime.now(), "", 200, new ArrayList<>());
     }
 
+    protected static void checkFileExists(String name) {
+        File f = new File(kafkaShell + "/" + name);
+        if (!f.exists()) {
+            throw new RuntimeException("Required file " + f.getAbsolutePath() + " does not exist");
+        }
+
+        if (!f.canExecute()) {
+            throw new RuntimeException("Required file " + f.getAbsolutePath() + " must be executable");
+        }
+    }
 
 
     protected List<String> getUrls(int NUM_MESSAGES) {
