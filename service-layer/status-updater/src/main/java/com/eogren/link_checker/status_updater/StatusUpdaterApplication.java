@@ -1,6 +1,7 @@
 package com.eogren.link_checker.status_updater;
 
 import ch.qos.logback.classic.Level;
+import com.eogren.link_checker.messaging.consumer.*;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.client.ApiClient;
 import com.eogren.link_checker.status_updater.config.StatusUpdaterConfig;
@@ -25,18 +26,27 @@ public class StatusUpdaterApplication {
 
     public StatusUpdaterApplication(String configFile) {
         config = createConfig(configFile);
-
         apiClient = createApiClient(config);
+        int numThreads = config.getNumThreads();
 
-        logger.info("I'm alive!!");
-        try {
-            List<MonitoredPage> pages = apiClient.getMonitoredPagesThatLinkTo("http://www.cnn.com");
-            for (MonitoredPage page : pages) {
-                System.out.println(page);
+        com.eogren.link_checker.messaging.consumer.ScraperMessageProcessor processor = new ScraperMessageProcessor(apiClient, numThreads);
+        ScraperMessageKafkaConsumer consumer = new ScraperMessageKafkaConsumer(config.getKafkaConfig(), "status-updater", processor);
+        consumer.start(numThreads);
+
+        logger.info("Started with " + numThreads + " threads.");
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                logger.info("Stopping consumers...");
+                consumer.stop();
             }
-        } catch (IOException e) {
-            System.out.println("IO Error! " + e.getMessage());
-            System.exit(1);
+        });
+
+        try {
+            while (true) {
+                Thread.sleep(999999);
+            }
+        } catch (InterruptedException e) {
+            logger.info("Main thread exiting...");
         }
     }
 

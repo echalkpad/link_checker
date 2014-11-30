@@ -1,16 +1,22 @@
 package com.eogren.link_checker.status_updater.tests;
 
+import com.eogren.link_checker.messaging.common.Utils;
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import com.eogren.link_checker.status_updater.ScraperMessageProcessor;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.eogren.link_checker.service_layer.client.ApiClient;
+import com.eogren.link_checker.status_updater.StatusUpdaterApplication;
+import com.eogren.link_checker.status_updater.config.StatusUpdaterConfig;
 import org.joda.time.DateTime;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -94,6 +100,25 @@ public class StatusUpdaterTest {
 
         public List<MonitoredPageUpdate> getStatusUpdates() {
             return statusUpdates;
+        }
+    }
+
+    public class TestStatusUpdaterApplication extends StatusUpdaterApplication {
+        private final Map<String, List<CrawlReport>> crawlReportsFollowingLinks;
+        private final Map<String, List<MonitoredPage>> pagesThatLinkTo;
+
+        public TestStatusUpdaterApplication(String configFile,
+                                            Map<String, List<MonitoredPage>> pagesThatLinkTo,
+                                            Map<String, List<CrawlReport>> crawlReportsFollowingLinks) {
+            super(configFile);
+
+            this.pagesThatLinkTo = pagesThatLinkTo;
+            this.crawlReportsFollowingLinks = crawlReportsFollowingLinks;
+        }
+
+        @Override
+        protected ApiClient createApiClient(StatusUpdaterConfig config) {
+            return new TestApiClient(pagesThatLinkTo, crawlReportsFollowingLinks);
         }
     }
 
