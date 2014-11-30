@@ -71,8 +71,21 @@ The crawler is responsible for:
  
 ## Crawl Scheduler
 
-TODO fillin
- 
+The crawl scheduler is the component that controls the crawler instances. It has two main responsibilities:
+
+* Every 30 minutes (+/- a little bit to avoid a flood of messages), schedule crawls for all Monitored Pages in the system
+* When a link is discovered on a Monitored Page, ensure that said link has been crawled in the last 30 minutes; schedule a crawl of that page if it hasn't. 
+    - The "ensure said link has been crawled in the last 30 minutes" rule is mostly to avoid unnecessary server load -- eg if I monitor 3 pages on http://www.cnn.com, there is no need to recrawl all the links in the header and footer 3 times in a row.
+
+The scheduler assumes it can hold every link in the system in-memory which should be a pretty safe assumption for the immediate future. It relies on the Data API to retrieve the list of Monitored Pages and Kafka to send and receive ScrapeRequests and ScrapeResponses, respectively.
+
+Needs to:
+  Hold a map URL -> last scheduled
+  Hold a priority queue of crawl schedule times
+
+  Wake up every minute and queue threads
+  Process correct ones
+
 ## Status Updater
 
 The status updater is responsible for processing CrawlReports for various URLs and updating the status of any monitored pages that link to said URL. If the CrawlReport is for a monitored URL itself then the status must also be updated.
