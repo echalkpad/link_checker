@@ -5,6 +5,7 @@ import com.eogren.link_checker.scheduler.commands.Command;
 import com.eogren.link_checker.scheduler.commands.ProduceScrapeRequestsCommand;
 import com.eogren.link_checker.scheduler.commands.SendScrapeRequestCommand;
 import com.eogren.link_checker.scheduler.config.KafkaConfiguration;
+import kafka.common.FailedToSendMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,12 +52,14 @@ public class KafkaProducerThread {
         while (!stop.get()) {
             try {
                 Command c = inputQueue.take();
-                if (c instanceof ProduceScrapeRequestsCommand) {
+                if (c instanceof SendScrapeRequestCommand) {
                     SendScrapeRequestCommand cmd = (SendScrapeRequestCommand) c;
                     producer.emitScrapeRequest(cmd.getUrl());
                 } else {
                     logger.warn("Ignoring unknown message " + c.toString());
                 }
+            } catch (FailedToSendMessageException e) {
+                // ignore; KafkaProducer already logged it
             } catch (InterruptedException e) {
                 // ignore
             }

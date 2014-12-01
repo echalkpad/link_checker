@@ -4,6 +4,7 @@ import com.eogren.link_checker.messaging.common.Utils;
 import com.eogren.link_checker.messaging.serde.ProtobufSerializer;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.config.KafkaConfig;
+import kafka.common.FailedToSendMessageException;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
@@ -28,7 +29,16 @@ public class KafkaProducer implements MessageEmitter {
     public void emitMessage(String unprefixed_topic, String partition_key, byte[] raw_data) {
         String topic = Utils.getStringWithPrefix(config.getPrefix(), unprefixed_topic);
         logger.debug("Sending message to topic " + topic + ", partition " + partition_key);
-        producer.send(new KeyedMessage<>(topic, partition_key, raw_data));
+        try {
+            producer.send(new KeyedMessage<>(topic, partition_key, raw_data));
+        } catch (FailedToSendMessageException e) {
+            logger.error(
+                    "Failed to send message to topic " + topic +
+                    ", key " + partition_key +
+                    ", broker " + config.getBrokerList() +
+                    ", exception: " + e.getMessage());
+            throw e;
+        }
     }
 
     @Override
