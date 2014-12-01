@@ -14,5 +14,10 @@ public class NullKafkaProducer implements MessageEmitter {
     public void notifyCrawlReport(Optional<CrawlReport> oldCrawlReport, CrawlReport newCrawlReport) {
         // intentionally empty
     }
+
+    @Override
+    public void emitScrapeRequest(String url) {
+        // intentionally empty
+    }
 }
 

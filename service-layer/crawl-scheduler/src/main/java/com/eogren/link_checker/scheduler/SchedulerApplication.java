@@ -1,6 +1,8 @@
 package com.eogren.link_checker.scheduler;
 
 import ch.qos.logback.classic.Level;
+import com.eogren.link_checker.messaging.consumer.ScraperMessageKafkaConsumer;
+import com.eogren.link_checker.messaging.producer.KafkaProducer;
 import com.eogren.link_checker.scheduler.commands.Command;
 import com.eogren.link_checker.scheduler.config.SchedulerApplicationConfig;
 import com.eogren.link_checker.service_layer.client.ApiClient;
@@ -15,17 +17,31 @@ import javax.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class SchedulerApplication {
     protected final Logger logger = LoggerFactory.getLogger(SchedulerApplication.class);
-
-
     public SchedulerApplication(String configPath) {
-        System.out.println(configPath);
-    }
+        SchedulerApplicationConfig config = createConfig(configPath);
 
+        // Set up Kafka producer
+        KafkaProducerThread producer = new KafkaProducerThread(config.getKafkaConfig());
+        producer.start();
+
+        // Set up main logic loop
+        ApiClient apiClient = new ApiClient(config.getDataApiConfig().getDataApiHost());
+        CommandExecutor mainLoop = new CommandExecutor(apiClient, config.getMonitoredPageInterval(), producer.getInputQueue());
+        mainLoop.start();
+
+        // Set up Kafka Consumer
+        ScrapeUpdateProcessor processor = new ScrapeUpdateProcessor(mainLoop.getInputQueue());
+        ScraperMessageKafkaConsumer consumer = new ScraperMessageKafkaConsumer(
+                config.getKafkaConfig(), config.getKafkaConfig().getConsumerGroup(), processor
+        );
+        consumer.start(1);
+    }
 
     // Bootstrap Methods
     public static void main(String[] args) {

@@ -55,4 +55,18 @@ public class ProtobufSerializer {
             throw new IllegalArgumentException("Bad bytestream; could not deserialize message");
         }
     }
+
+    /**
+     * Create a scrape request for a given URL
+     */
+    public static byte[] createScrapeRequest(String url) {
+        ScraperMessages.ScrapeRequest.Builder b = ScraperMessages.ScrapeRequest.newBuilder();
+        b.setUrl(url);
+
+        return ScraperMessages.ScraperMessage.newBuilder()
+                .setType(ScraperMessages.ScraperMessage.Type.SCRAPE_REQUEST)
+                .setRequest(b.build())
+                .build()
+                .toByteArray();
+    }
 }

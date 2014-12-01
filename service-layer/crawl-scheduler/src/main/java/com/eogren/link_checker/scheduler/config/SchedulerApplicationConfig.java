@@ -6,6 +6,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.DefaultValue;
 
 public class SchedulerApplicationConfig {
     @NotNull
@@ -16,6 +17,11 @@ public class SchedulerApplicationConfig {
     @Valid
     protected DataApiConfig dataApiConfig;
 
+    @Min(1000)
+    @Max(120000)
+    @DefaultValue("30000")
+    protected long monitoredPageInterval;
+
     @JsonProperty("kafka")
     public KafkaConfiguration getKafkaConfig() {
         return kafkaConfig;
@@ -24,5 +30,10 @@ public class SchedulerApplicationConfig {
     @JsonProperty("data_api")
     public DataApiConfig getDataApiConfig() {
         return dataApiConfig;
+    }
+
+    @JsonProperty("mp_interval")
+    public long getMonitoredPageInterval() {
+        return monitoredPageInterval;
     }
 }

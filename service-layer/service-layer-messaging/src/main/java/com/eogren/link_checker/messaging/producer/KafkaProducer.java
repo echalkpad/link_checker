@@ -37,6 +37,12 @@ public class KafkaProducer implements MessageEmitter {
         emitMessage(Utils.SCRAPER_TOPIC, newCrawlReport.getUrl(), buf);
     }
 
+    @Override
+    public void emitScrapeRequest(String url) {
+        byte[] buf = ProtobufSerializer.createScrapeRequest(url);
+        emitMessage(Utils.SCRAPER_TOPIC, url, buf);
+    }
+
     protected Producer<String, byte[]> getProducer() {
         return new Producer<>(getProducerConfig());
     }
