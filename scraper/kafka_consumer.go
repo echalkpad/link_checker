@@ -61,6 +61,7 @@ func (kc *KafkaConsumer) start() {
 				sr, err := decodeScrapeRequest(e.Value)
 				if err != nil {
 					log.Printf("Error decoding value: %v", err)
+					continue
 				}
 
 				kc.OutputChan <- *sr
