@@ -2,7 +2,6 @@ package com.eogren.link_checker.service_layer.tests;
 
 import com.eogren.link_checker.service_layer.api.APIStatusException;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
-import com.eogren.link_checker.service_layer.api.Page;
 import com.eogren.link_checker.service_layer.data.InMemoryMonitoredPageRepository;
 import com.eogren.link_checker.service_layer.data.MonitoredPageRepository;
 import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
@@ -57,7 +56,7 @@ public class MonitoredPageResourceTest {
 
         MonitoredPage newPage = createMonitoredPage(newPageUrl);
 
-        sut.newMonitoredPage(newPage.getUrl(), newPage);
+        sut.newMonitoredPage(newPage);
 
         List<MonitoredPage> allPages = repo.getAllMonitoredPages();
         assertUrlInList(allPages, newPageUrl);
@@ -69,7 +68,8 @@ public class MonitoredPageResourceTest {
         String mismatchedUrl = "http://www.newpage.com";
 
         MonitoredPage newPage = createMonitoredPage("http://www.a.different.url");
-        sut.newMonitoredPage(mismatchedUrl, newPage);
+        sut.newMonitoredPage(newPage);
+        sut.updateMonitoredPage(mismatchedUrl, newPage);
     }
 
     @Test

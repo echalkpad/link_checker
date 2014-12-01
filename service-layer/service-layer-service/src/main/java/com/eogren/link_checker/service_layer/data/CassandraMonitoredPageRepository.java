@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class CassandraMonitoredPageRepository implements MonitoredPageRepository {
-    protected final Logger logger = LoggerFactory.getLogger(CassandraMonitoredPageRepository.class);
+    protected static final Logger logger = LoggerFactory.getLogger(CassandraMonitoredPageRepository.class);
 
     protected Session session;
 
@@ -49,11 +49,12 @@ public class CassandraMonitoredPageRepository implements MonitoredPageRepository
     @Override
     @Timed
     public void addMonitoredPage(MonitoredPage newPage) {
+        if (newPage == null) {
+            throw new IllegalArgumentException("newPage cannot be null");
+        }
+
         BoundStatement bs = new BoundStatement(getPreparedInsertStatement());
-        logger.debug(String.format("About to insert url %s, last updated %s, status %s",
-                newPage.getUrl(),
-                newPage.getLastUpdated().toString(),
-                newPage.getStatus().toString()));
+        logger.debug(String.format("About to insert %s", newPage.toString()));
 
         session.execute(bs.bind(newPage.getUrl(), newPage.getLastUpdated().toDate(), statusToInt(newPage.getStatus())));
     }

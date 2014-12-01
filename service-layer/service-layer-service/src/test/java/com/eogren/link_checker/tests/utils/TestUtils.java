@@ -66,9 +66,9 @@ public class TestUtils {
     }
 
     public static void addMonitoredPage(Client client, String url, DropwizardAppRule<LinkCheckerConfiguration> rule) {
-        getResource(client, TestUtils.mpPrefix + url, rule)
+        getResource(client, TestUtils.mpPrefix, rule)
                 .entity(new MonitoredPage(url), MediaType.APPLICATION_JSON)
-                .put();
+                .post();
     }
 
     public static MonitoredPage getMonitoredPage(String url, DropwizardAppRule<LinkCheckerConfiguration> rule) {

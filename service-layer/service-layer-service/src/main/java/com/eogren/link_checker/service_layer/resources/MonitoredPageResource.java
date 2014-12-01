@@ -11,7 +11,9 @@ import com.wordnik.swagger.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.hibernate.validator.constraints.URL;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -88,17 +90,51 @@ public class MonitoredPageResource {
         return mp.get();
     }
 
+    @POST
+    @Timed
+    @ApiOperation(value = "Add a new Monitored Page to the system")
+    @ApiResponses(value = {
+            @ApiResponse(code=422, message="URL not valid")
+    })
+    public APIStatus newMonitoredPage(@Valid MonitoredPage requestedPage) {
+        final String url = requestedPage.getUrl();
+
+        try {
+            java.net.URL parsedUrl = new java.net.URL(url);
+            String protocol = parsedUrl.getProtocol().toLowerCase();
+
+            if (!protocol.equals("http") && !protocol.equals("https")) {
+                throw new APIStatusException(
+                        new APIStatus(false, String.format("%s does not start with http or https", url)), 422
+                );
+            }
+        } catch (MalformedURLException e) {
+            throw new APIStatusException(
+                    new APIStatus(false, String.format("Could not parse %s as a URL: %s", url, e.getMessage())), 422
+            );
+        }
+
+        MonitoredPage newPage = new MonitoredPage(url);
+        monitoredPageRepository.addMonitoredPage(newPage);
+
+        return new APIStatus(true, String.format("Successfully added %s", url));
+    }
+
     @PUT
     @Timed
     @Path("/{url: .*}")
-    @ApiOperation(value = "Add a new Monitored Page to the system")
-    @ApiResponses(value = { @ApiResponse(code=405, message="Invalid Input")})
+    @ApiOperation(value = "Update a new Monitored Page in the system")
+    @ApiResponses(value = {
+            @ApiResponse(code=404, message="URL does not exist"),
+            @ApiResponse(code=405, message="Invalid Input"),
+            @ApiResponse(code=422, message="Body could not be parsed"),
+    })
     /**
-     * Add a new Monitored Page to the system. The root page URL is used as the key.
+     * Update a new Monitored Page in the system. The root page URL is used as the key.
      * TODO: Normalize URLs
      */
-    public APIStatus newMonitoredPage(@ApiParam(value = "URL to add to the system", required=true) @PathParam("url") String url,
-                                      @Valid MonitoredPage newPage) {
+    public APIStatus updateMonitoredPage(@ApiParam(value = "URL to update", required = true) @PathParam("url") String url,
+                                         @Valid MonitoredPage newPage) {
         if (!url.equals(newPage.getUrl())) {
             throw new APIStatusException(
                     new APIStatus(false, String.format("Key from URL %s does not match key for object %s",
@@ -108,8 +144,26 @@ public class MonitoredPageResource {
             );
         }
 
+        if (!monitoredPageRepository.pageAlreadyMonitored(url)) {
+            throw new APIStatusException(
+                    new APIStatus(false, String.format("%s does not exist", url)), 404
+            );
+        }
+
+        if (newPage.getLastUpdated() == null) {
+            throw new APIStatusException(
+                    new APIStatus(false, "LastUpdated must be set in this request"), 422
+            );
+        }
+
+        if (newPage.getStatus() == null) {
+            throw new APIStatusException(
+                    new APIStatus(false, "Status must be set in this request"), 422
+            );
+        }
+
         monitoredPageRepository.addMonitoredPage(newPage);
-        return new APIStatus(true, String.format("Successfully added %s", url));
+        return new APIStatus(true, String.format("Successfully updated %s", url));
 
     }
 
@@ -137,7 +191,6 @@ public class MonitoredPageResource {
     public List<MonitoredPage> searchForMonitoredPages(
             @ApiParam(value="Filter to pages that link to a given page", required=true)
             @NotEmpty
-            @URL
             @QueryParam("links_to") String links_to
     ) {
         // 1. Retrieve the list of crawled pages that link to links_to. Note that pages
