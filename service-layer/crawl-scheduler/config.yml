@@ -1,10 +1,10 @@
 ---
-mp_interval: 30000
+mp_interval: 1800000
 
 data_api:
     host: http://localhost:8080
 kafka:
-    brokerlist: localhost:9082
+    brokerlist: localhost:9092
     zookeeper: localhost:2181
     numThreads: 1
     consumerGroup: crawlscheduler
