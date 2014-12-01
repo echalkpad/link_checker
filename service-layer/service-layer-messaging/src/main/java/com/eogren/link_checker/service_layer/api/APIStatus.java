@@ -35,4 +35,12 @@ public class APIStatus {
     public String getDescription() {
         return description;
     }
+
+    @Override
+    public String toString() {
+        return "APIStatus{" +
+                "success=" + success +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

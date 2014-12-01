@@ -26,4 +26,9 @@ public class APIStatusException extends WebApplicationException {
     public Response getResponse() {
         return response;
     }
+
+    @Override
+    public String getMessage() {
+        return response.getEntity().toString();
+    }
 }
