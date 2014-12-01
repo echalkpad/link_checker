@@ -7,8 +7,6 @@ package main
 
 import (
 	"log"
-	"net/url"
-	"time"
 )
 
 func webProcessFactory() RequestProcessor {
@@ -31,15 +29,19 @@ func workerFactory() Dispatcher {
 func main() {
 	p := NewFanOutProcessor(WorkerFactory(workerFactory))
 	fanout := NewDispatcher(p)
-	scrapeInterval := time.Duration(5)
 
 	respChan := make(chan ScrapeResponse)
 	apiClient := NewAPIClient("http://localhost:8080", nil)
 	respSender := NewQueueProcessorWithWorkers(NewResponseSender(apiClient), 10)
 
-	respSender.Start()
+	kafkaConsumer, err := NewKafkaConsumer([]string{"localhost:9092"}, "scrapeReports")
+	if err != nil {
+		log.Fatalf("Failed setting up consumer: %v", err)
+	}
 
-	var timer = time.After(1 * time.Millisecond)
+	go kafkaConsumer.start()
+
+	respSender.Start()
 
 	go func() {
 		for {
@@ -47,51 +49,10 @@ func main() {
 			case resp := <-respChan:
 				log.Printf("Dispatch ScrapeResponse for " + resp.URL.String())
 				respSender.Process(resp)
-
-				if resp.Depth > 0 {
-					// XXX: Need to clean out uniqueURLs or else new scrapes will never be scheduled
-					uniqueURLs := make(map[string]bool)
-					for _, l := range resp.Links {
-						uniqueURLs[l.URL] = true
-					}
-
-					for strURL := range uniqueURLs {
-						parsedURL, err := url.Parse(strURL)
-						if err != nil {
-							log.Printf("Failed to parse %s, skipping", strURL)
-							continue
-						}
-
-						req := ScrapeRequest{
-							url:      parsedURL,
-							depth:    resp.Depth - 1,
-							respChan: respChan,
-						}
-
-						log.Printf("Dispatch ScrapeRequest for %s\n", strURL)
-						fanout.ReqChan() <- req
-					}
-				}
-			case <-timer:
-				urls, err := apiClient.GetRootPages()
-
-				if err != nil {
-					log.Printf("Unable to retrieve root pages from API: %v", err)
-					timer = time.After(scrapeInterval * 2 * time.Minute)
-					continue
-				}
-
-				for _, url := range urls {
-					req := ScrapeRequest{
-						url:      url,
-						depth:    1,
-						respChan: respChan,
-					}
-					log.Printf("Dispatch ScrapeRequest for %s\n", url)
-					fanout.ReqChan() <- req
-				}
-
-				timer = time.After(scrapeInterval * time.Minute)
+			case req := <-kafkaConsumer.OutputChan:
+				log.Printf("Recieved ScrapeRequest from Kafka for " + req.url.String())
+				req.respChan = respChan
+				fanout.ReqChan() <- req
 			}
 		}
 	}()

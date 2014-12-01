@@ -1,2 +1,3 @@
 scraper
 out
+gen/*.go
