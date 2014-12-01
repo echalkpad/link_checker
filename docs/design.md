@@ -58,7 +58,7 @@ generally responsible for persisting or retrieving any data from Cassandra and a
 
 No other components should be directly interacting with Cassandra, nor should they emit any Kafka events themselves that talk about data changing in the system -- this way the service layer can maintain transactional guarantees.
 
-API docs are generated using Swagger and are available at http://localhost:8080/api-docs.
+API docs are generated using Swagger and are available at http://localhost:8080/swagger/. (The JSON spec is available at http://localhost:8080/api-docs.)
 
 ## Crawler
 
