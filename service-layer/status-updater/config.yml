@@ -2,6 +2,6 @@
 data_api:
     host: http://localhost:8080
 kafka:
-    brokerlist: localhost:9082
+    brokerlist: localhost:9092
     zookeeper: localhost:2181
     numThreads: 1
