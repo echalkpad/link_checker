@@ -41,6 +41,14 @@ public class Link {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "Link{" +
+                "url='" + url + '\'' +
+                ", anchorText='" + anchorText + '\'' +
+                '}';
+    }
+
     @JsonProperty
     public String getUrl() {
         return url;
