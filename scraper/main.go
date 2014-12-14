@@ -53,7 +53,7 @@ func main() {
 	apiClient := NewAPIClient(config.DataAPIAddr, nil)
 	respSender := NewQueueProcessorWithWorkers(NewResponseSender(apiClient), 10)
 
-	kafkaConsumer, err := NewKafkaConsumer([]string{config.KafkaAddr}, "scrapeReports")
+	kafkaConsumer, err := NewKafkaConsumer([]string{config.KafkaAddr}, []string{config.ZookeeperAddr}, "scrapeReports")
 	if err != nil {
 		log.Fatalf("Failed setting up consumer: %v", err)
 	}

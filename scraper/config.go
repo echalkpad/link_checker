@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -48,9 +49,11 @@ func validateConfig(config *Config) error {
 		return fmt.Errorf("Kafka address must be set")
 	}
 
-	if config.DataAPIAddr == "" {
-		return fmt.Errorf("DataApi address must be valiid")
+	if !strings.HasPrefix(config.DataAPIAddr, "http") {
+		return fmt.Errorf("DataApi address must start with HTTP")
 	}
+
+	config.DataAPIAddr = strings.TrimSuffix(config.DataAPIAddr, "/")
 
 	return nil
 }

@@ -2,11 +2,13 @@ package main
 
 import (
 	"./gen"
-	"code.google.com/p/goprotobuf/proto"
 	"fmt"
-	"github.com/Shopify/sarama"
 	"log"
 	"net/url"
+	"time"
+
+	"code.google.com/p/goprotobuf/proto"
+	"github.com/Shopify/sarama"
 )
 
 // KafkaConsumer is responsible for listening to messages on a Kafka queue; consuming the protobufs
@@ -18,11 +20,13 @@ type KafkaConsumer struct {
 
 	Partitions []int32
 	Consumers  []*sarama.Consumer
+
+	zookeeperAddrs []string
 }
 
 // NewKafkaConsumer creates a new kafka consumer pointing at the given addresses and topic
-func NewKafkaConsumer(addrs []string, topic string) (*KafkaConsumer, error) {
-	c, err := sarama.NewClient("link_checker_scraper", addrs, sarama.NewClientConfig())
+func NewKafkaConsumer(kafkaAddrs []string, zookeeperAddrs []string, topic string) (*KafkaConsumer, error) {
+	c, err := sarama.NewClient("link_checker_scraper", kafkaAddrs, sarama.NewClientConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -33,17 +37,28 @@ func NewKafkaConsumer(addrs []string, topic string) (*KafkaConsumer, error) {
 	}
 
 	return &KafkaConsumer{
-		Topic:       topic,
-		KafkaClient: c,
-		OutputChan:  make(chan ScrapeRequest, 4),
-		Consumers:   make([]*sarama.Consumer, len(partitions)),
-		Partitions:  partitions,
+		Topic:          topic,
+		KafkaClient:    c,
+		OutputChan:     make(chan ScrapeRequest, 4),
+		Consumers:      make([]*sarama.Consumer, len(partitions)),
+		Partitions:     partitions,
+		zookeeperAddrs: zookeeperAddrs,
 	}, nil
 }
 
 func (kc *KafkaConsumer) start() {
+	checkpointer, err := NewZKPartitioner(kc.zookeeperAddrs)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create ZKpartitioner: %v", err))
+	}
+
 	for i, partition := range kc.Partitions {
-		consumer, err := sarama.NewConsumer(kc.KafkaClient, kc.Topic, partition, "link_checker_scraper", getConsumerConfig())
+		offset, err := checkpointer.GetLastCheckpoint(kc.Topic, partition)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to retrieve offset for %s/%d: %v!", kc.Topic, partition, err))
+		}
+
+		consumer, err := sarama.NewConsumer(kc.KafkaClient, kc.Topic, partition, "link_checker_scraper", getConsumerConfig(offset))
 		if err != nil {
 			log.Fatalf("Failed to create consumer: %v", err)
 		}
@@ -51,22 +66,39 @@ func (kc *KafkaConsumer) start() {
 		kc.Consumers[i] = consumer
 		log.Printf("Starting KafkaConsumer for topic %s,  partition %d, waiting for requests", kc.Topic, partition)
 
-		go func() {
-			for e := range consumer.Events() {
-				if e.Err != nil {
-					log.Printf("Error retrieving event: %v", e.Err)
-					continue
-				}
+		go func(partition int32) {
+			var lastOffset int64
 
-				sr, err := decodeScrapeRequest(e.Value)
-				if err != nil {
-					log.Printf("Error decoding value: %v", err)
-					continue
-				}
+			clock := time.Tick(1 * time.Second)
+			lastOffset = -1
 
-				kc.OutputChan <- *sr
+			for {
+				select {
+				case <-clock:
+					if lastOffset != -1 {
+						err := checkpointer.SaveCheckpoint(kc.Topic, partition, lastOffset)
+						if err != nil {
+							panic(fmt.Sprintf("Failed to save checkpoint for partition %d offset %d! %v", partition, lastOffset, err))
+						}
+					}
+				case e := <-consumer.Events():
+					if e.Err != nil {
+						log.Printf("Error retrieving event: %v", e.Err)
+						continue
+					}
+
+					lastOffset = e.Offset
+
+					sr, err := decodeScrapeRequest(e.Value)
+					if err != nil {
+						log.Printf("Error decoding value: %v", err)
+						continue
+					}
+
+					kc.OutputChan <- *sr
+				}
 			}
-		}()
+		}(partition)
 	}
 }
 
@@ -97,9 +129,15 @@ func decodeScrapeRequest(buf []byte) (*ScrapeRequest, error) {
 	return &ScrapeRequest{url: parsedURL, depth: 1}, nil
 }
 
-func getConsumerConfig() *sarama.ConsumerConfig {
+func getConsumerConfig(offset int64) *sarama.ConsumerConfig {
 	c := sarama.NewConsumerConfig()
-	c.OffsetMethod = sarama.OffsetMethodOldest
+
+	if offset == -1 {
+		c.OffsetMethod = sarama.OffsetMethodNewest
+	} else {
+		c.OffsetMethod = sarama.OffsetMethodManual
+		c.OffsetValue = offset
+	}
 
 	return c
 }

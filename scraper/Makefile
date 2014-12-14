@@ -9,6 +9,7 @@ scraper: *.go gen/scrapers.pb.go
 	go get code.google.com/p/go.net/html/atom
 	go get github.com/Shopify/sarama
 	go get gopkg.in/yaml.v2
+	go get github.com/samuel/go-zookeeper/zk
 	go get github.com/golang/lint/golint
 	go fmt .
 	go vet .
