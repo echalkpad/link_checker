@@ -55,8 +55,9 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
                 // some reason thread 0's post about page status happens after thread 0).
                 //
                 // XXX This blockingquee approach only works if there is one status updater in the system.
-                // Separate Kafka topic with partition keys is probably better solution.
-                int queueNo = pageToUpdate.getUrl().hashCode() % workerQueues.size();
+                // Separate Kafka topic with partition keys is probably better solution since then even if there are distributed workers they
+                // can magically coordinate among themselves.
+                int queueNo = Math.abs(pageToUpdate.getUrl().hashCode()) % workerQueues.size();
                 try {
                     workerQueues.get(queueNo).put(pageToUpdate);
                 } catch (InterruptedException e) {
