@@ -6,7 +6,9 @@ The scraper leverages goroutines to scrape multiple domains concurrently.
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 )
 
 func webProcessFactory() RequestProcessor {
@@ -15,6 +17,21 @@ func webProcessFactory() RequestProcessor {
 
 func workerFactory() Dispatcher {
 	return NewBucketDispatcher(3, RequestProcessorFactory(webProcessFactory))
+}
+
+func loadConfig() *Config {
+	if len(os.Args) < 2 {
+		fmt.Printf("Must specify config file on command line!\n")
+		fmt.Printf("Usage: %s [filename]\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	config, err := ConfigFromFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+
+	return config
 }
 
 // General architecture:
@@ -27,14 +44,16 @@ func workerFactory() Dispatcher {
 // fill in response handling
 // --(url, follow_links) ---> Dispatcher [--> Worker -->] ResProcessor --(loop)
 func main() {
+	config := loadConfig()
+
 	p := NewFanOutProcessor(WorkerFactory(workerFactory))
 	fanout := NewDispatcher(p)
 
 	respChan := make(chan ScrapeResponse)
-	apiClient := NewAPIClient("http://localhost:8080", nil)
+	apiClient := NewAPIClient(config.DataAPIAddr, nil)
 	respSender := NewQueueProcessorWithWorkers(NewResponseSender(apiClient), 10)
 
-	kafkaConsumer, err := NewKafkaConsumer([]string{"localhost:9092"}, "scrapeReports")
+	kafkaConsumer, err := NewKafkaConsumer([]string{config.KafkaAddr}, "scrapeReports")
 	if err != nil {
 		log.Fatalf("Failed setting up consumer: %v", err)
 	}

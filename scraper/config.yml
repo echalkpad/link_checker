@@ -1,0 +1,4 @@
+---
+zookeeper: localhost:2181
+kafka: localhost:9092
+data_api: http://localhost:8080/
