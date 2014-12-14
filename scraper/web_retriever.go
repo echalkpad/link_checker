@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const userAgent = "Site-up Link Checker Bot 0.1"
+
 // WebClient is a client that can retrieve a URL body and POST to a given URL.
 type WebClient interface {
 	GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error)
@@ -30,8 +32,16 @@ func (w *webClientDefault) SetTimeout(d time.Duration) {
 }
 
 func (w *webClientDefault) GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error) {
-	client := http.Client{Timeout: 30 * time.Second}
-	httpResp, err := client.Get(url)
+	client := http.Client{Timeout: 30 * time.Second, CheckRedirect: checkRedirect}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	req.Header.Set("User-Agent", userAgent)
+
+	httpResp, err := client.Do(req)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -64,4 +74,9 @@ func readBody(r *http.Response, maxLength int64) ([]byte, error) {
 	// that consuming 2MB per request is fine
 	cappedR := NewAtMostNReader(maxLength, r.Body)
 	return ioutil.ReadAll(cappedR)
+}
+
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	req.Header.Set("User-Agent", userAgent)
+	return nil
 }
