@@ -1,5 +1,5 @@
 ---
-mp_interval: 1800000
+mp_interval: 120000
 
 data_api:
     host: http://localhost:8080

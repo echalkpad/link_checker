@@ -139,6 +139,7 @@ public class StatusUpdaterTest {
                         .setNewStatus(ScraperMessages.ScrapeResponse.newBuilder()
                                         .setUrl("http://www.brokenpage.com")
                                         .setStatus(false)
+                                        .setStatusCode(500)
                                         .setStatusMessage("Broken by unit test")
                                         .build()
                         )

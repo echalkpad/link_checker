@@ -2,6 +2,7 @@ package com.eogren.link_checker.messaging.serde;
 
 import com.eogren.link_checker.protobuf.ScraperMessages;
 import com.eogren.link_checker.service_layer.api.CrawlReport;
+import com.eogren.link_checker.service_layer.api.Link;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import java.util.Optional;
@@ -13,11 +14,24 @@ public class ProtobufSerializer {
      * @return Protobuf object
      */
     public static ScraperMessages.ScrapeResponse crawlReportToProtobuf(CrawlReport crawlReport) {
-        return ScraperMessages.ScrapeResponse.newBuilder()
-                .setUrl(crawlReport.getUrl())
-                .setStatus(crawlReport.getStatusCode() == 200)
-                .setStatusMessage("Test")
-                .addLinks("http://www.cnn.com")
+        ScraperMessages.ScrapeResponse.Builder b =
+                ScraperMessages.ScrapeResponse.newBuilder()
+                    .setUrl(crawlReport.getUrl())
+                    .setStatus(crawlReport.getStatusCode() == 200)
+                    .setStatusCode(crawlReport.getStatusCode())
+                    .setStatusMessage(crawlReport.getError());
+
+        for (Link l : crawlReport.getLinks()) {
+            b.addLinks(linkToProtobuf(l));
+        }
+
+        return b.build();
+    }
+
+    private static ScraperMessages.Link linkToProtobuf(Link l) {
+        return ScraperMessages.Link.newBuilder()
+                .setUrl(l.getUrl())
+                .setAnchorText(l.getAnchorText())
                 .build();
     }
 

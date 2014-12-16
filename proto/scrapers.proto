@@ -7,12 +7,18 @@ message ScrapeRequest {
     required string url = 1;
 }
 
+message Link {
+    required string url = 1;
+    required string anchorText = 2;
+}
+
 message ScrapeResponse {
     required string url = 1;
     required bool status = 2;
-    required string statusMessage = 3;
-    repeated string links = 4;
-    repeated string warnings = 5;
+    required int32 statusCode = 3;
+    required string statusMessage = 4;
+    repeated Link links = 5;
+    repeated string warnings = 6;
 }
 
 message ScrapeUpdate {

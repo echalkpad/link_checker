@@ -88,6 +88,7 @@ public class ScraperMessageProcessorTest
         return ScraperMessages.ScrapeResponse.newBuilder()
                 .setUrl("http://www.cnn.com")
                 .setStatus(true)
+                .setStatusCode(200)
                 .setStatusMessage("OK")
                 .build();
     }
