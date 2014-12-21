@@ -16,19 +16,26 @@ The Link Checker service is a monitoring tool that monitors a set of URLs for br
   
 ## System Architecture
 
- The Link Checker service consists of a few components:
+ The Link Checker service consists of a few components. In general they are all written in Java mainly to facilitate code re-use. The Scrapers are written in golang.
  
- * **DB Abstraction Layer**
+ * **Data API**
  
- The DB abstraction layer is responsible for saving or retrieving information that needs to be persisted in the system. For example, the list of monitored pages, or crawl report for a given page.
+ The Data API is responsible for saving or retrieving information that needs to be persisted in the system. For example, the list of monitored pages, or crawl report for a given page. Anything that needs to store or retrieve data from the source of truth should contact the Data API.
+ 
+ The Data API is also responsible for publishing data change events via a Kafka topic so that other components in the system can either update their local caches or take actions as required.
  
  * **Crawl Scheduler**
  
- The crawl scheduler is responsible for deciding when a URL should be crawled, and dispatching a message to the crawlers at the appropriate time. 
+ The crawl scheduler is responsible for deciding when a URL should be crawled, and dispatching a message to the crawlers at the appropriate time. Every Monitored Page in the system is periodically crawled; the scheduler is also responsible for scheduling crawls for pages that are linked to by a Monitored Page.
+ 
+ It is designed to ensure that no URL is crawled more than a given interval (currently 30 minutes).
+ 
+ Crawls are scheduled by emitting ScrapeRequests over a Kafka topic.
  
  * **Crawlers**
  
- Crawlers are responsible for retrieving the contents of a given web page, parsing links out of the page if it contains HTML, and then reporting the crawl status.
+ Crawlers are responsible for retrieving the contents of a given web page, parsing links out of the page if it contains HTML, and then reporting the crawl status. They listen on a Kafka topic for ScrapeRequests and then inform the Data API of the results.
+ 
  
  * **Crawl Status Updater**
 
@@ -40,10 +47,17 @@ The Link Checker service is a monitoring tool that monitors a set of URLs for br
  
  Emails users watching a monitored page if the status has gone red or green.
  
+ * **Frontend API Proxy**
+ 
+ The frontend API proxy is publically available and used by the front-end. It mainly just proxies requests to/from the Data API.
+ 
+ It uses node.js and the Express framework. The API proxy also serves the front-end static assets.
+ 
  * **Frontend**
  
  Allows users to add monitored pages / see their status in real time.
  
+ Uses React JS and the Flux style.
 
 # System Components
 
@@ -68,6 +82,10 @@ The crawler is responsible for:
  * Rate-limiting requests to a domain to N/sec (currently 3)
  * Retrieving a given URL [report error if code is not in the 200s]
  * Parsing the HTML output and extracting any href links
+ 
+It is implemented in Golang and uses a set of goroutines to coordinate.
+
+![image](scraper_arch.png)
  
 ## Crawl Scheduler
 
@@ -107,8 +125,13 @@ To think about:
  	* This makes processing a CrawlReport trickier and more expensive (because the PUT /CrawlReport operator needs to retrieve status info for any new links on the page) at the cost of not having to do as many reads when a given page changes status.
  	* And processing cost is only slightly more expensive unless a new link is discovered on a monitored page (or one goes away)
 
-Status updater v1: Ignore any optimization tricks until we know they are needed. Just pull all links when a page changes status and update any monitored pages appropriately.
+**Status updater v1**: Ignore any optimization tricks until we know they are needed. Just pull all links when a page changes status and update any monitored pages appropriately.
 
+## Frontend
+
+### Actions and data flow
+
+![image](frontend_arch.png)
 # Data Design
 
 TODO fillin
