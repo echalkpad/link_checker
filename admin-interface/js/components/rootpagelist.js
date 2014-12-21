@@ -19,7 +19,7 @@ var urlHostNameCompare = function(url1, url2) {
 
 var RootPageList = React.createClass({
     getInitialState: function() {
-        return { new_url: "" }
+        return { new_url: "" };
     },
 
     render: function() {

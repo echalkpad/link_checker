@@ -9,7 +9,7 @@ RootPageStore.startSync();
 
 var App = React.createClass({
   render: function() {
-    return <div><Header /><Sidebar /><MainView /></div>
+    return <div><Header /><Sidebar /><MainView /></div>;
   }
 });
 

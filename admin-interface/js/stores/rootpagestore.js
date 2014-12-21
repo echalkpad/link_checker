@@ -46,14 +46,14 @@ var syncNewPageToServer = function(data) {
         }
     ).done(retrievePages)
      .fail(function() {
-        console.log("Put failed!")
+        console.log("Put failed!");
      });
 };
 
 var deletePageFromServer = function(url) {
-    var url = config.baseURL + endpoint + '/' + url;
+    var reqUrl = config.baseURL + endpoint + '/' + url;
     $.ajax(
-        url,
+        reqUrl,
         {
             type: 'DELETE'
         }

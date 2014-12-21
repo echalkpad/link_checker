@@ -7,6 +7,9 @@ grunt.initConfig({
       }
     }
   },
+  jshint: {
+      all: ['Gruntfile.js', 'js/**/*.js']
+  },
   sass: {
     dist: {
       files: {
@@ -80,6 +83,7 @@ grunt.initConfig({
 grunt.loadNpmTasks('grunt-browserify');
 grunt.loadNpmTasks('grunt-contrib-concat');
 grunt.loadNpmTasks('grunt-contrib-cssmin');
+grunt.loadNpmTasks('grunt-jsxhint');
 grunt.loadNpmTasks('grunt-contrib-sass');
 grunt.loadNpmTasks('grunt-contrib-uglify');
 grunt.loadNpmTasks('grunt-contrib-watch');
@@ -87,7 +91,7 @@ grunt.loadNpmTasks('grunt-filerev');
 grunt.loadNpmTasks('grunt-replace');
 grunt.loadNpmTasks('grunt-usemin');
 
-grunt.registerTask('default', ['sass', 'browserify', 'useminPrepare', 'concat']);
+grunt.registerTask('default', ['jshint', 'sass', 'browserify', 'useminPrepare', 'concat']);
 grunt.registerTask('dev', ['default', 'watch']);
 grunt.registerTask('dist', ['replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
-}
+};

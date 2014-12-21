@@ -1,0 +1,1806 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"OffsetMe",
+				"OffsetMethodNewest	 Ɩ"
+			],
+			[
+				"Pu",
+				"PutVarint	int ƒ"
+			],
+			[
+				"Conf",
+				"ConfigFromFile	*Config, error ƒ"
+			],
+			[
+				"exp",
+				"expectedZookeeper	 ν"
+			],
+			[
+				"Err",
+				"Errorf	 ƒ"
+			],
+			[
+				"Config",
+				"ConfigFromFile	*Config, err ƒ"
+			],
+			[
+				"Read",
+				"ReadFile	[]byte, error ƒ"
+			],
+			[
+				"scr",
+				"scrapers"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "scraper/dispatcher.go",
+			"settings":
+			{
+				"buffer_size": 3201,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "scraper/queue_processor.go",
+			"settings":
+			{
+				"buffer_size": 1867,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "scraper/api_client.go",
+			"settings":
+			{
+				"buffer_size": 2645,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "scraper/response_sender.go",
+			"settings":
+			{
+				"buffer_size": 1071,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "scraper/web_retriever.go",
+			"settings":
+			{
+				"buffer_size": 1779,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"bytes\"\n	\"encoding/json\"\n	\"fmt\"\n	\"net/url\"\n	\"time\"\n)\n\n// APIClient is an interface that queries the REST API for information\n// and can report results\ntype APIClient interface {\n	// GetRootPages requests the list of root pages to crawl from the server\n	GetRootPages() ([]*url.URL, error)\n\n	// SubmitScrapeResponse submits a ScrapeResponse to the server\n	SubmitScrapeResponse(sr *ScrapeResponse) error\n}\n\ntype apiClientImpl struct {\n	baseURL string\n	client  WebClient\n}\n\ntype rootPage struct {\n	URL string `json:\"url\"`\n}\n\n// crawlReport translates a ScrapeResponse into the CrawlReport specified by the server API.\n// (unsurprisingly they are basically the same thing)\ntype crawlReport struct {\n	URL        string    `json:\"url\"`\n	StatusCode int       `json:\"statusCode\"`\n	Links      []*Link   `json:\"links\"`\n	Date       time.Time `json:\"date\"`\n	Error      string    `json:\"error\"`\n}\n\n// NewAPIClient creates a new api client using the given baseURL (root location\n// of the service API) and WebClient to actually make web requests. If WebClient\n// is null, a default one will be created.\nfunc NewAPIClient(baseURL string, client WebClient) APIClient {\n	r := client\n	if r == nil {\n		r = NewWebClient()\n	}\n	return &apiClientImpl{baseURL: baseURL, client: r}\n}\n\nfunc (c *apiClientImpl) GetRootPages() ([]*url.URL, error) {\n	reqURL := c.baseURL + \"/api/v1/monitored_page\"\n\n	r, sc, err := c.client.GetURL(reqURL, 5000000)\n	if err != nil {\n		return nil, err\n	}\n\n	if sc != 200 {\n		return nil, fmt.Errorf(\"Call to API returned %d\", sc)\n	}\n\n	dec := json.NewDecoder(r)\n\n	var pages []rootPage\n	err = dec.Decode(&pages)\n\n	if err != nil {\n		return nil, err\n	}\n\n	urls := make([]*url.URL, 0, 50)\n	for _, rp := range pages {\n		url, err := url.Parse(rp.URL)\n		if err != nil {\n			// XXX log\n			continue\n		}\n		urls = append(urls, url)\n	}\n	return urls, nil\n}\n\nfunc (c *apiClientImpl) SubmitScrapeResponse(sr *ScrapeResponse) error {\n	reqURL := c.baseURL + \"/api/v1/crawl_report\"\n\n	report := crawlReportFromScrapeResponse(sr)\n\n	body, err := json.Marshal(report)\n	if err != nil {\n		return err\n	}\n\n	sc, err := c.client.PostURL(reqURL, bytes.NewReader(body))\n	if err != nil {\n		return err\n	}\n\n	if sc >= 400 {\n		return fmt.Errorf(\"POST for %s was not success: returned %d\", body, sc)\n	}\n\n	return nil\n}\n\nfunc crawlReportFromScrapeResponse(sr *ScrapeResponse) *crawlReport {\n	resp := crawlReport{\n		URL:        sr.URL.String(),\n		StatusCode: sr.Status,\n		Links:      sr.Links,\n		Date:       sr.Date,\n	}\n\n	if resp.Links == nil {\n		resp.Links = make([]*Link, 0, 1)\n	}\n\n	if sr.Err != nil {\n		resp.Error = fmt.Sprintf(\"%v\", sr.Err)\n	}\n\n	return &resp\n}\n",
+			"file": "goutils/api_client.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 2648,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"io\"\n	\"io/ioutil\"\n	\"net/url\"\n	\"strings\"\n	\"testing\"\n	\"time\"\n)\n\ntype mockWebClient struct {\n	resp     string\n	sc       int\n	lastURL  string\n	lastPOST string\n}\n\nfunc (r *mockWebClient) GetURL(url string, maxLength int64) (io.Reader, int, error) {\n	r.lastURL = url\n	return strings.NewReader(r.resp), r.sc, nil\n}\n\nfunc (r *mockWebClient) PostURL(url string, body io.Reader) (int, error) {\n	r.lastURL = url\n	bytes, err := ioutil.ReadAll(body)\n	r.lastPOST = string(bytes)\n\n	if err != nil {\n		panic(\"Unexpected failure while reading body\")\n	}\n	return 200, nil\n}\n\nfunc (r *mockWebClient) SetTimeout(t time.Duration) {\n\n}\n\nfunc TestApiClientCanParseRootPages(t *testing.T) {\n	r := &mockWebClient{resp: `[{\"url\": \"http://www.cnn.com\"}, {\"url\": \"http://www.nytimes.com\"}]`, sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/monitored_page\"\n	expectedLinks := make(map[string]bool)\n	expectedLinks[\"http://www.cnn.com\"] = true\n	expectedLinks[\"http://www.nytimes.com\"] = true\n\n	urls, err := c.GetRootPages()\n	if err != nil {\n		t.Fatalf(\"Expected GetRootPage to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last retrieved URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if len(urls) != len(expectedLinks) {\n		t.Errorf(\"Expected len(root page links) to be %d, was %d\", len(urls), len(expectedLinks))\n	}\n\n	for _, url := range urls {\n		_, ok := expectedLinks[url.String()]\n		if !ok {\n			t.Errorf(\"Expected %s to be found in expected URL list, was not\", url.String())\n		}\n	}\n}\n\nfunc TestApiClientCanPostCrawlReports(t *testing.T) {\n	r := &mockWebClient{sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/crawl_report\"\n	expectedBody := `{\"url\":\"http://www.eogren.com\",\"statusCode\":200,\"links\":[{\"url\":\"http://www.link1.com\",\"anchorText\":\"Link One\"},{\"url\":\"http://www.link2.com\",\"anchorText\":\"Link Two\"}],\"date\":\"2014-01-05T00:00:00Z\",\"error\":\"\"}`\n\n	url, _ := url.Parse(\"http://www.eogren.com\")\n\n	resp := &ScrapeResponse{URL: url, Status: 200, Links: make([]*Link, 0, 2), Date: time.Date(2014, 01, 05, 00, 00, 00, 00, time.UTC)}\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link1.com\", AnchorText: \"Link One\"})\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link2.com\", AnchorText: \"Link Two\"})\n\n	err := c.SubmitScrapeResponse(resp)\n	if err != nil {\n		t.Errorf(\"Expected SubmitScrapeResponse to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if r.lastPOST != expectedBody {\n		t.Errorf(\"Expected last POST to be %s, was %s\", expectedBody, r.lastPOST)\n	}\n\n}\n",
+			"file": "goutils/api_client_test.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 2709,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"bytes\"\n	\"fmt\"\n	\"io\"\n	\"io/ioutil\"\n	\"net/http\"\n	\"time\"\n)\n\n// WebClient is a client that can retrieve a URL body and POST to a given URL.\ntype WebClient interface {\n	GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error)\n	PostURL(url string, body io.Reader) (statusCode int, err error)\n	SetTimeout(d time.Duration)\n}\n\n// NewWebClient returns a new WebClient.\nfunc NewWebClient() WebClient {\n	return &webClientDefault{client: &http.Client{Timeout: 30 * time.Second}}\n}\n\ntype webClientDefault struct {\n	client *http.Client\n}\n\nfunc (w *webClientDefault) SetTimeout(d time.Duration) {\n	w.client.Timeout = d\n}\n\nfunc (w *webClientDefault) GetURL(url string, maxLength int64) (r io.Reader, statusCode int, err error) {\n	client := http.Client{Timeout: 30 * time.Second}\n	httpResp, err := client.Get(url)\n	if err != nil {\n		return nil, -1, err\n	}\n\n	// We read the entire body into a buffer now to avoid potential problems with timeouts later\n	body, err := readBody(httpResp, maxLength)\n\n	return bytes.NewReader(body), httpResp.StatusCode, err\n}\n\nfunc (w *webClientDefault) PostURL(url string, body io.Reader) (statusCode int, err error) {\n	httpResp, err := w.client.Post(url, \"application/json\", body)\n	if err != nil {\n		return -1, err\n	}\n\n	defer httpResp.Body.Close()\n\n	return httpResp.StatusCode, err\n}\n\nfunc readBody(r *http.Response, maxLength int64) ([]byte, error) {\n	defer r.Body.Close()\n\n	if r.ContentLength > maxLength {\n		return nil, fmt.Errorf(\"Discarding because content length is greater than 2MB (%d)\", r.ContentLength)\n	}\n\n	// If content-length is -1, for now assume these processes complete fast enough\n	// that consuming 2MB per request is fine\n	cappedR := NewAtMostNReader(maxLength, r.Body)\n	return ioutil.ReadAll(cappedR)\n}\n",
+			"file": "goutils/web_client.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 1782,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"testing\"\n	\"time\"\n)\n\nfunc TestWebClientError(t *testing.T) {\n	t.Parallel()\n\n	r := NewWebClient()\n	r.SetTimeout(1 * time.Millisecond)\n	doneChan := make(chan error)\n	timerChan := time.After(10 * time.Millisecond)\n\n	go func() {\n		_, _, err := r.GetURL(\"http://localhost:9999\", 500000)\n		doneChan <- err\n	}()\n\n	select {\n	case err := <-doneChan:\n		if err == nil {\n			t.Errorf(\"Expected to receieve error for bad url, did not\")\n		}\n	case <-timerChan:\n		t.Errorf(\"Expected to receive a response within 1 millisecond but did not\")\n	}\n}\n",
+			"file": "goutils/web_client_test.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 555,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package \"go-utils/data-api\"\n\nimport (\n	\"bytes\"\n	\"encoding/json\"\n	\"fmt\"\n	\"net/url\"\n	\"time\"\n)\n\n// APIClient is an interface that queries the REST API for information\n// and can report results\ntype APIClient interface {\n	// GetRootPages requests the list of root pages to crawl from the server\n	GetRootPages() ([]*url.URL, error)\n\n	// SubmitScrapeResponse submits a ScrapeResponse to the server\n	SubmitScrapeResponse(sr *ScrapeResponse) error\n}\n\ntype apiClientImpl struct {\n	baseURL string\n	client  WebClient\n}\n\ntype rootPage struct {\n	URL string `json:\"url\"`\n}\n\n// crawlReport translates a ScrapeResponse into the CrawlReport specified by the server API.\n// (unsurprisingly they are basically the same thing)\ntype crawlReport struct {\n	URL        string    `json:\"url\"`\n	StatusCode int       `json:\"statusCode\"`\n	Links      []*Link   `json:\"links\"`\n	Date       time.Time `json:\"date\"`\n	Error      string    `json:\"error\"`\n}\n\n// NewAPIClient creates a new api client using the given baseURL (root location\n// of the service API) and WebClient to actually make web requests. If WebClient\n// is null, a default one will be created.\nfunc NewAPIClient(baseURL string, client WebClient) APIClient {\n	r := client\n	if r == nil {\n		r = NewWebClient()\n	}\n	return &apiClientImpl{baseURL: baseURL, client: r}\n}\n\nfunc (c *apiClientImpl) GetRootPages() ([]*url.URL, error) {\n	reqURL := c.baseURL + \"/api/v1/monitored_page\"\n\n	r, sc, err := c.client.GetURL(reqURL, 5000000)\n	if err != nil {\n		return nil, err\n	}\n\n	if sc != 200 {\n		return nil, fmt.Errorf(\"Call to API returned %d\", sc)\n	}\n\n	dec := json.NewDecoder(r)\n\n	var pages []rootPage\n	err = dec.Decode(&pages)\n\n	if err != nil {\n		return nil, err\n	}\n\n	urls := make([]*url.URL, 0, 50)\n	for _, rp := range pages {\n		url, err := url.Parse(rp.URL)\n		if err != nil {\n			// XXX log\n			continue\n		}\n		urls = append(urls, url)\n	}\n	return urls, nil\n}\n\nfunc (c *apiClientImpl) SubmitScrapeResponse(sr *ScrapeResponse) error {\n	reqURL := c.baseURL + \"/api/v1/crawl_report\"\n\n	report := crawlReportFromScrapeResponse(sr)\n\n	body, err := json.Marshal(report)\n	if err != nil {\n		return err\n	}\n\n	sc, err := c.client.PostURL(reqURL, bytes.NewReader(body))\n	if err != nil {\n		return err\n	}\n\n	if sc >= 400 {\n		return fmt.Errorf(\"POST for %s was not success: returned %d\", body, sc)\n	}\n\n	return nil\n}\n\nfunc crawlReportFromScrapeResponse(sr *ScrapeResponse) *crawlReport {\n	resp := crawlReport{\n		URL:        sr.URL.String(),\n		StatusCode: sr.Status,\n		Links:      sr.Links,\n		Date:       sr.Date,\n	}\n\n	if resp.Links == nil {\n		resp.Links = make([]*Link, 0, 1)\n	}\n\n	if sr.Err != nil {\n		resp.Error = fmt.Sprintf(\"%v\", sr.Err)\n	}\n\n	return &resp\n}\n",
+			"file": "go-utils/data-api/api_client.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 2660,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package \"go-utils/data-api\"\n\nimport (\n	\"io\"\n	\"io/ioutil\"\n	\"net/url\"\n	\"strings\"\n	\"testing\"\n	\"time\"\n)\n\ntype mockWebClient struct {\n	resp     string\n	sc       int\n	lastURL  string\n	lastPOST string\n}\n\nfunc (r *mockWebClient) GetURL(url string, maxLength int64) (io.Reader, int, error) {\n	r.lastURL = url\n	return strings.NewReader(r.resp), r.sc, nil\n}\n\nfunc (r *mockWebClient) PostURL(url string, body io.Reader) (int, error) {\n	r.lastURL = url\n	bytes, err := ioutil.ReadAll(body)\n	r.lastPOST = string(bytes)\n\n	if err != nil {\n		panic(\"Unexpected failure while reading body\")\n	}\n	return 200, nil\n}\n\nfunc (r *mockWebClient) SetTimeout(t time.Duration) {\n\n}\n\nfunc TestApiClientCanParseRootPages(t *testing.T) {\n	r := &mockWebClient{resp: `[{\"url\": \"http://www.cnn.com\"}, {\"url\": \"http://www.nytimes.com\"}]`, sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/monitored_page\"\n	expectedLinks := make(map[string]bool)\n	expectedLinks[\"http://www.cnn.com\"] = true\n	expectedLinks[\"http://www.nytimes.com\"] = true\n\n	urls, err := c.GetRootPages()\n	if err != nil {\n		t.Fatalf(\"Expected GetRootPage to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last retrieved URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if len(urls) != len(expectedLinks) {\n		t.Errorf(\"Expected len(root page links) to be %d, was %d\", len(urls), len(expectedLinks))\n	}\n\n	for _, url := range urls {\n		_, ok := expectedLinks[url.String()]\n		if !ok {\n			t.Errorf(\"Expected %s to be found in expected URL list, was not\", url.String())\n		}\n	}\n}\n\nfunc TestApiClientCanPostCrawlReports(t *testing.T) {\n	r := &mockWebClient{sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/crawl_report\"\n	expectedBody := `{\"url\":\"http://www.eogren.com\",\"statusCode\":200,\"links\":[{\"url\":\"http://www.link1.com\",\"anchorText\":\"Link One\"},{\"url\":\"http://www.link2.com\",\"anchorText\":\"Link Two\"}],\"date\":\"2014-01-05T00:00:00Z\",\"error\":\"\"}`\n\n	url, _ := url.Parse(\"http://www.eogren.com\")\n\n	resp := &ScrapeResponse{URL: url, Status: 200, Links: make([]*Link, 0, 2), Date: time.Date(2014, 01, 05, 00, 00, 00, 00, time.UTC)}\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link1.com\", AnchorText: \"Link One\"})\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link2.com\", AnchorText: \"Link Two\"})\n\n	err := c.SubmitScrapeResponse(resp)\n	if err != nil {\n		t.Errorf(\"Expected SubmitScrapeResponse to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if r.lastPOST != expectedBody {\n		t.Errorf(\"Expected last POST to be %s, was %s\", expectedBody, r.lastPOST)\n	}\n\n}\n",
+			"file": "go-utils/data-api/api_client_test.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 2721,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "scraper/utils.go",
+			"settings":
+			{
+				"buffer_size": 722,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"bytes\"\n	\"io/ioutil\"\n	\"strings\"\n	\"testing\"\n)\n\nfunc TestCanReadAllFromNMostUnderLimit(t *testing.T) {\n	longString := \"This is a string under the max limit\"\n	wrapped := strings.NewReader(longString)\n\n	r := NewAtMostNReader(200000, wrapped)\n\n	buf, err := ioutil.ReadAll(r)\n	if err != nil {\n		t.Errorf(\"Expected read from a short enough buffer to have no error, instead returned %v\", err)\n	}\n\n	if !bytes.Equal(buf, []byte(longString)) {\n		t.Errorf(\"Expected buf to be %v, was %v\", longString, buf)\n	}\n}\n\nfunc TestReadingTooMuchFRomNMostUnderLimitReturnsError(t *testing.T) {\n	longString := \"This is a string longer than the max limit\"\n	wrapped := strings.NewReader(longString)\n	r := NewAtMostNReader(6, wrapped)\n\n	_, err := ioutil.ReadAll(r)\n	if err == nil {\n		t.Errorf(\"Expected read from a buffer that is too large to return error, instead returned nil\")\n	}\n\n}\n",
+			"file": "goutils/utils_test.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 886,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package goutils\n\nimport (\n	\"fmt\"\n	\"io\"\n)\n\ntype atMostNReader struct {\n	maxBytes  int64\n	wrappedR  io.Reader\n	readBytes int64\n}\n\n// NewAtMostNReader returns a Reader that will return an error if the caller tries to Read more than maxBytes bytes\n// out of the stream. It is similar to io.LimitReader but returns an error instead of EOF.\nfunc NewAtMostNReader(maxBytes int64, r io.Reader) io.Reader {\n	return &atMostNReader{maxBytes: maxBytes, wrappedR: r}\n}\n\nfunc (r *atMostNReader) Read(p []byte) (int, error) {\n	n, err := r.wrappedR.Read(p)\n\n	r.readBytes += int64(n)\n\n	if r.readBytes > r.maxBytes {\n		return n, fmt.Errorf(\"Exceeded max byte count of %d\", r.maxBytes)\n	}\n\n	if err != nil {\n		return n, err\n	}\n\n	return n, nil\n}\n",
+			"file": "goutils/utils.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 725,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "package main\n\nimport (\n	\"io\"\n	\"io/ioutil\"\n	\"net/url\"\n	\"strings\"\n	\"testing\"\n	\"time\"\n)\n\ntype mockWebClient struct {\n	resp     string\n	sc       int\n	lastURL  string\n	lastPOST string\n}\n\nfunc (r *mockWebClient) GetURL(url string, maxLength int64) (io.Reader, int, error) {\n	r.lastURL = url\n	return strings.NewReader(r.resp), r.sc, nil\n}\n\nfunc (r *mockWebClient) PostURL(url string, body io.Reader) (int, error) {\n	r.lastURL = url\n	bytes, err := ioutil.ReadAll(body)\n	r.lastPOST = string(bytes)\n\n	if err != nil {\n		panic(\"Unexpected failure while reading body\")\n	}\n	return 200, nil\n}\n\nfunc (r *mockWebClient) SetTimeout(t time.Duration) {\n\n}\n\nfunc TestApiClientCanParseRootPages(t *testing.T) {\n	r := &mockWebClient{resp: `[{\"url\": \"http://www.cnn.com\"}, {\"url\": \"http://www.nytimes.com\"}]`, sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/monitored_page\"\n	expectedLinks := make(map[string]bool)\n	expectedLinks[\"http://www.cnn.com\"] = true\n	expectedLinks[\"http://www.nytimes.com\"] = true\n\n	urls, err := c.GetRootPages()\n	if err != nil {\n		t.Fatalf(\"Expected GetRootPage to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last retrieved URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if len(urls) != len(expectedLinks) {\n		t.Errorf(\"Expected len(root page links) to be %d, was %d\", len(urls), len(expectedLinks))\n	}\n\n	for _, url := range urls {\n		_, ok := expectedLinks[url.String()]\n		if !ok {\n			t.Errorf(\"Expected %s to be found in expected URL list, was not\", url.String())\n		}\n	}\n}\n\nfunc TestApiClientCanPostCrawlReports(t *testing.T) {\n	r := &mockWebClient{sc: 200}\n	c := NewAPIClient(\"http://unittest\", r)\n\n	expectedURL := \"http://unittest/api/v1/crawl_report\"\n	expectedBody := `{\"url\":\"http://www.eogren.com\",\"statusCode\":200,\"links\":[{\"url\":\"http://www.link1.com\",\"anchorText\":\"Link One\"},{\"url\":\"http://www.link2.com\",\"anchorText\":\"Link Two\"}],\"date\":\"2014-01-05T00:00:00Z\",\"error\":\"\"}`\n\n	url, _ := url.Parse(\"http://www.eogren.com\")\n\n	resp := &ScrapeResponse{URL: url, Status: 200, Links: make([]*Link, 0, 2), Date: time.Date(2014, 01, 05, 00, 00, 00, 00, time.UTC)}\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link1.com\", AnchorText: \"Link One\"})\n	resp.Links = append(resp.Links, &Link{URL: \"http://www.link2.com\", AnchorText: \"Link Two\"})\n\n	err := c.SubmitScrapeResponse(resp)\n	if err != nil {\n		t.Errorf(\"Expected SubmitScrapeResponse to have no error, instead %v\", err)\n	}\n\n	if r.lastURL != expectedURL {\n		t.Errorf(\"Expected last URL to be %s, was %s\", expectedURL, r.lastURL)\n	}\n\n	if r.lastPOST != expectedBody {\n		t.Errorf(\"Expected last POST to be %s, was %s\", expectedBody, r.lastPOST)\n	}\n\n}\n",
+			"file": "goutils/data-api/api_client_test.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 2706,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "// Code generated by protoc-gen-go.\n// source: scrapers.proto\n// DO NOT EDIT!\n\n/*\nPackage link_checker_messages is a generated protocol buffer package.\n\nIt is generated from these files:\n	scrapers.proto\n\nIt has these top-level messages:\n	Link\n	ScrapeRequest\n	ScrapeResponse\n	ScrapeUpdate\n	ScraperMessage\n*/\npackage link_checker_messages\n\nimport proto \"code.google.com/p/goprotobuf/proto\"\nimport math \"math\"\n\n// Reference imports to suppress errors if they are not otherwise used.\nvar _ = proto.Marshal\nvar _ = math.Inf\n\ntype ScraperMessage_Type int32\n\nconst (\n	ScraperMessage_SCRAPE_REQUEST  ScraperMessage_Type = 1\n	ScraperMessage_SCRAPE_RESPONSE ScraperMessage_Type = 2\n	ScraperMessage_SCRAPE_UPDATE   ScraperMessage_Type = 3\n)\n\nvar ScraperMessage_Type_name = map[int32]string{\n	1: \"SCRAPE_REQUEST\",\n	2: \"SCRAPE_RESPONSE\",\n	3: \"SCRAPE_UPDATE\",\n}\nvar ScraperMessage_Type_value = map[string]int32{\n	\"SCRAPE_REQUEST\":  1,\n	\"SCRAPE_RESPONSE\": 2,\n	\"SCRAPE_UPDATE\":   3,\n}\n\nfunc (x ScraperMessage_Type) Enum() *ScraperMessage_Type {\n	p := new(ScraperMessage_Type)\n	*p = x\n	return p\n}\nfunc (x ScraperMessage_Type) String() string {\n	return proto.EnumName(ScraperMessage_Type_name, int32(x))\n}\nfunc (x *ScraperMessage_Type) UnmarshalJSON(data []byte) error {\n	value, err := proto.UnmarshalJSONEnum(ScraperMessage_Type_value, data, \"ScraperMessage_Type\")\n	if err != nil {\n		return err\n	}\n	*x = ScraperMessage_Type(value)\n	return nil\n}\n\ntype Link struct {\n	Url              *string `protobuf:\"bytes,1,req,name=url\" json:\"url,omitempty\"`\n	AnchorText       *string `protobuf:\"bytes,2,req,name=anchorText\" json:\"anchorText,omitempty\"`\n	XXX_unrecognized []byte  `json:\"-\"`\n}\n\nfunc (m *Link) Reset()         { *m = Link{} }\nfunc (m *Link) String() string { return proto.CompactTextString(m) }\nfunc (*Link) ProtoMessage()    {}\n\nfunc (m *Link) GetUrl() string {\n	if m != nil && m.Url != nil {\n		return *m.Url\n	}\n	return \"\"\n}\n\nfunc (m *Link) GetAnchorText() string {\n	if m != nil && m.AnchorText != nil {\n		return *m.AnchorText\n	}\n	return \"\"\n}\n\ntype ScrapeRequest struct {\n	Url              *string `protobuf:\"bytes,1,req,name=url\" json:\"url,omitempty\"`\n	XXX_unrecognized []byte  `json:\"-\"`\n}\n\nfunc (m *ScrapeRequest) Reset()         { *m = ScrapeRequest{} }\nfunc (m *ScrapeRequest) String() string { return proto.CompactTextString(m) }\nfunc (*ScrapeRequest) ProtoMessage()    {}\n\nfunc (m *ScrapeRequest) GetUrl() string {\n	if m != nil && m.Url != nil {\n		return *m.Url\n	}\n	return \"\"\n}\n\ntype ScrapeResponse struct {\n	Url              *string  `protobuf:\"bytes,1,req,name=url\" json:\"url,omitempty\"`\n	Status           *bool    `protobuf:\"varint,2,req,name=status\" json:\"status,omitempty\"`\n	StatusMessage    *string  `protobuf:\"bytes,3,req,name=statusMessage\" json:\"statusMessage,omitempty\"`\n	Links            []*Link  `protobuf:\"bytes,4,rep,name=links\" json:\"links,omitempty\"`\n	Warnings         []string `protobuf:\"bytes,5,rep,name=warnings\" json:\"warnings,omitempty\"`\n	XXX_unrecognized []byte   `json:\"-\"`\n}\n\nfunc (m *ScrapeResponse) Reset()         { *m = ScrapeResponse{} }\nfunc (m *ScrapeResponse) String() string { return proto.CompactTextString(m) }\nfunc (*ScrapeResponse) ProtoMessage()    {}\n\nfunc (m *ScrapeResponse) GetUrl() string {\n	if m != nil && m.Url != nil {\n		return *m.Url\n	}\n	return \"\"\n}\n\nfunc (m *ScrapeResponse) GetStatus() bool {\n	if m != nil && m.Status != nil {\n		return *m.Status\n	}\n	return false\n}\n\nfunc (m *ScrapeResponse) GetStatusMessage() string {\n	if m != nil && m.StatusMessage != nil {\n		return *m.StatusMessage\n	}\n	return \"\"\n}\n\nfunc (m *ScrapeResponse) GetLinks() []*Link {\n	if m != nil {\n		return m.Links\n	}\n	return nil\n}\n\nfunc (m *ScrapeResponse) GetWarnings() []string {\n	if m != nil {\n		return m.Warnings\n	}\n	return nil\n}\n\ntype ScrapeUpdate struct {\n	OldStatus        *ScrapeResponse `protobuf:\"bytes,1,opt,name=oldStatus\" json:\"oldStatus,omitempty\"`\n	NewStatus        *ScrapeResponse `protobuf:\"bytes,2,req,name=newStatus\" json:\"newStatus,omitempty\"`\n	XXX_unrecognized []byte          `json:\"-\"`\n}\n\nfunc (m *ScrapeUpdate) Reset()         { *m = ScrapeUpdate{} }\nfunc (m *ScrapeUpdate) String() string { return proto.CompactTextString(m) }\nfunc (*ScrapeUpdate) ProtoMessage()    {}\n\nfunc (m *ScrapeUpdate) GetOldStatus() *ScrapeResponse {\n	if m != nil {\n		return m.OldStatus\n	}\n	return nil\n}\n\nfunc (m *ScrapeUpdate) GetNewStatus() *ScrapeResponse {\n	if m != nil {\n		return m.NewStatus\n	}\n	return nil\n}\n\ntype ScraperMessage struct {\n	Type             *ScraperMessage_Type `protobuf:\"varint,1,req,name=type,enum=link_checker_messages.ScraperMessage_Type\" json:\"type,omitempty\"`\n	Request          *ScrapeRequest       `protobuf:\"bytes,2,opt,name=request\" json:\"request,omitempty\"`\n	Response         *ScrapeResponse      `protobuf:\"bytes,3,opt,name=response\" json:\"response,omitempty\"`\n	Update           *ScrapeUpdate        `protobuf:\"bytes,4,opt,name=update\" json:\"update,omitempty\"`\n	XXX_unrecognized []byte               `json:\"-\"`\n}\n\nfunc (m *ScraperMessage) Reset()         { *m = ScraperMessage{} }\nfunc (m *ScraperMessage) String() string { return proto.CompactTextString(m) }\nfunc (*ScraperMessage) ProtoMessage()    {}\n\nfunc (m *ScraperMessage) GetType() ScraperMessage_Type {\n	if m != nil && m.Type != nil {\n		return *m.Type\n	}\n	return ScraperMessage_SCRAPE_REQUEST\n}\n\nfunc (m *ScraperMessage) GetRequest() *ScrapeRequest {\n	if m != nil {\n		return m.Request\n	}\n	return nil\n}\n\nfunc (m *ScraperMessage) GetResponse() *ScrapeResponse {\n	if m != nil {\n		return m.Response\n	}\n	return nil\n}\n\nfunc (m *ScraperMessage) GetUpdate() *ScrapeUpdate {\n	if m != nil {\n		return m.Update\n	}\n	return nil\n}\n\nfunc init() {\n	proto.RegisterEnum(\"link_checker_messages.ScraperMessage_Type\", ScraperMessage_Type_name, ScraperMessage_Type_value)\n}\n",
+			"file": "scheduler/scrapers.pb.go",
+			"file_size": -1,
+			"file_write_time": -1,
+			"settings":
+			{
+				"buffer_size": 5752,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 181.0,
+		"selected_items":
+		[
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"ins",
+				"Package Control: Install Package"
+			],
+			[
+				"inst",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 507.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/eric/Dropbox (Personal)/link_checker"
+	],
+	"file_history":
+	[
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/test_assets/bad_config.yml",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/Makefile",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/zk_partitioner.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/main.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/kafka_consumer.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/test_assets/good_config.yml",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/config.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/config_test.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scraper/bucket_dispatcher.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/proto/scrapers.proto",
+		"/Users/eric/Dropbox (Personal)/link_checker/scheduler/link_checker_messages/scrapers.pb.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scheduler/main_loop.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scheduler/main.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/goutils/config.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/scheduler/Makefile",
+		"/Users/eric/Dropbox (Personal)/link_checker/go-utils/utils_test.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/go-utils/utils.go",
+		"/Users/eric/Dropbox (Personal)/link_checker/goutils/Makefile",
+		"/Users/eric/Dropbox (Personal)/link_checker/link_checker.sublime-project",
+		"/Users/eric/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/eric/Library/Application Support/Sublime Text 3/Packages/User/Markdown.sublime-settings",
+		"/Users/eric/Library/Application Support/Sublime Text 3/Packages/GoSublime/CHANGELOG.md"
+	],
+	"find":
+	{
+		"height": 37.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"DataApiAddr",
+			"expectedDataApi",
+			"DataApiAddr",
+			"parsedUrl",
+			"scraperequest"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "scraper/dispatcher.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3201,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2324,
+								2337
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "scraper/queue_processor.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1867,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "scraper/api_client.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2645,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "scraper/response_sender.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1071,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "scraper/web_retriever.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1779,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 304.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "goutils/api_client.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2648,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15,
+								8
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "goutils/api_client_test.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2709,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15,
+								15
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "goutils/web_client.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1782,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15,
+								15
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "goutils/web_client_test.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 555,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								15,
+								15
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "go-utils/data-api/api_client.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2660,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								12,
+								12
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 12,
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "go-utils/data-api/api_client_test.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2721,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								28,
+								28
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 14,
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "scraper/utils.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 722,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 13,
+					"type": "text"
+				},
+				{
+					"buffer": 12,
+					"file": "goutils/utils_test.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 886,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 11,
+					"type": "text"
+				},
+				{
+					"buffer": 13,
+					"file": "goutils/utils.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 725,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 14,
+					"file": "goutils/data-api/api_client_test.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2706,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 15,
+					"file": "scheduler/scrapers.pb.go",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5752,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content"
+							],
+							"syntax": "Packages/GoSublime/syntax/GoSublime-Go.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 15,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "link_checker.sublime-project",
+	"replace":
+	{
+		"height": 42.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 307.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
