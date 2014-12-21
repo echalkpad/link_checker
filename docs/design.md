@@ -61,6 +61,8 @@ The Link Checker service is a monitoring tool that monitors a set of URLs for br
 
 # System Components
 
+![image](system_design.png)
+
 ## Messaging Infrastructure
  
 Kafka and Protobuf are used to send messages between the various components in the system. Kafka's persistence is set high enough so that if the crawl scheduler or status update die or need to be updated they can easily pick up from the last log message left off.
