@@ -34,7 +34,7 @@ var RootPageList = React.createClass({
         var new_url_status = this._validate_url(this.state.new_url);
 
         var nodes = sortedNodes.map(function (rp) {
-            return(<RootPage key={rp.url} url={rp.url} />);
+            return(<RootPage rp={rp} key={rp.url} />);
         });
 
         return(
@@ -42,6 +42,7 @@ var RootPageList = React.createClass({
                 {nodes}
                 <li>
                     <input type="text" placeholder="Enter new URL..." value={this.state.new_url} onChange={this._onNewUrlChanged} />
+
                     <button onClick={this._onNew} disabled={!new_url_status.status}>Add New</button>
                     <span className="validation">{new_url_status.msg}</span>
                 </li>

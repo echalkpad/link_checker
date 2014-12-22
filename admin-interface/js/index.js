@@ -1,4 +1,5 @@
 /** @jsx React.DOM */
+var constants = require('./common/constants');
 var Header = require('./components/header');
 var MainView = require('./components/mainview');
 var MonitoredPageStore = require('./stores/monitoredpagestore');
@@ -13,8 +14,12 @@ var stores = {
     'MonitoredPageStore': new MonitoredPageStore()
 };
 
-var actions = {
+var amp = constants.ADD_MONITORED_PAGE;
 
+var actions = {
+    amp: function() {
+        console.log('ADD_MP');
+    }
 };
 
 var flux = new Fluxxor.Flux(stores, actions);
@@ -35,4 +40,7 @@ var App = React.createClass({
     }
 });
 
-React.render(<App flux={flux}/>, document.getElementById('container'));
+React.render(
+    <App flux={flux} />,
+    document.getElementById('container')
+);
