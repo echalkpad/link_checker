@@ -1,8 +1,13 @@
 /** @jsx React.DOM */
+var constants = require('../common/constants.js');
+var Fluxxor = require('fluxxor');
 var React = require('react');
-var RootPageStore = require('../stores/rootpagestore');
+
+var FluxMixin = Fluxxor.FluxMixin(React);
 
 var RootPage = React.createClass({
+    mixins: [FluxMixin],
+
     propTypes: {
         url: React.PropTypes.string.isRequired
     },
@@ -14,8 +19,7 @@ var RootPage = React.createClass({
     },
 
     _onDelete: function() {
-        // TODO: Use Dispatcher instead of direct call to store?
-        RootPageStore.delete(this.props.url);
+        this.getFlux().dispatcher.dispatch({type: constants.DELETE_MONITORED_PAGE, payload: {url: this.props.url}});
     }
 });
 

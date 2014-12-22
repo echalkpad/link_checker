@@ -1,7 +1,8 @@
 /** @jsx React.DOM */
+var constants = require('../common/constants');
 var React = require('react');
 var RootPage = require('./rootpage');
-var RootPageStore = require('../stores/rootpagestore');
+var Fluxxor = require('fluxxor');
 var url = require('url');
 
 var urlHostNameCompare = function(url1, url2) {
@@ -17,7 +18,11 @@ var urlHostNameCompare = function(url1, url2) {
     }
 };
 
+var FluxMixin = Fluxxor.FluxMixin(React);
+
 var RootPageList = React.createClass({
+    mixins: [FluxMixin],
+
     getInitialState: function() {
         return { new_url: "" };
     },
@@ -55,8 +60,8 @@ var RootPageList = React.createClass({
     },
 
     _onNew: function() {
-        // TODO: Should not be directly calling into here
-        RootPageStore.add({url: this.state.new_url });
+        this.getFlux().dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE,
+            payload: {url: this.state.new_url, status: constants.status.UNKNOWN, sync_status: constants.server_status.SYNCING}});
     }
 
 });
