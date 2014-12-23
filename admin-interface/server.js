@@ -10,7 +10,7 @@ app.use(morgan('short'));
 app.use(express.static('client'));
 
 app.use(function(req, res, next){
-  res.status(404).send('Sorry cant find that!');
+  res.status(404).send('Sorry, can\'t find that!');
 });
 
 var server = app.listen(config.port, function() {
