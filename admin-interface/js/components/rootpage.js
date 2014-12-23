@@ -23,7 +23,7 @@ var RootPage = React.createClass({
     },
 
     _onDelete: function() {
-        this.getFlux().dispatcher.dispatch({type: constants.DELETE_MONITORED_PAGE, payload: {url: this.props.url}});
+        this.getFlux().actions.deleteMonitoredPage(this.props.url);
     },
 
     _statusToString: function(status) {

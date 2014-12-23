@@ -12,7 +12,7 @@ var MonitoredPageStore = Fluxxor.createStore({
     },
 
     onAddMonitoredPage: function(payload) {
-        this.monitored_pages.push({url: payload.url, status: payload.status, sync_status: payload.sync_status});
+        this.monitored_pages.push({url: payload.url, status: payload.status, sync_id: payload.sync_id, sync_status: payload.sync_status});
         this.emit('change');
     },
 

@@ -70,8 +70,7 @@ var RootPageList = React.createClass({
     },
 
     _onNew: function() {
-        this.getFlux().dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE,
-            payload: {url: this.state.new_url, status: constants.status.UNKNOWN, sync_status: constants.server_status.SYNCING}});
+        this.getFlux().actions.addMonitoredPage({url: this.state.new_url, status: constants.status.UNKNOWN, sync_status: constants.server_status.SYNCING});
     }
 
 });

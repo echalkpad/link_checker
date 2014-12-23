@@ -70,6 +70,10 @@ grunt.initConfig({
                   {
                       match: /<!--\s*DEVONLY\s*-->[\s\S]*?<!--\s*ENDDEVONLY\s*-->/gm,
                       replacement: ""
+                  },
+                  {
+                      match: /\/\*\s*DEVONLY[\s\S]*?ENDDEVONLY\s*\*\//gm,
+                      replacement: ""
                   }
               ]
           },
