@@ -78,7 +78,7 @@ grunt.initConfig({
               ]
           },
           files: [
-              {expand: true, flatten: true, src: ['index.html'], dest: 'dist/'}
+              {expand: true, flatten: true, src: ['client/index.html'], dest: 'client/dist/'}
           ]
       }
   }
