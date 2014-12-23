@@ -81,10 +81,33 @@ grunt.initConfig({
               {expand: true, flatten: true, src: ['client/index.html'], dest: 'client/dist/'}
           ]
       }
+  },
+  cdnify: {
+    all: {
+      options: {
+        rewriter: function(url) {
+           if (url.indexOf('data:') === 0 ||
+              url.indexOf('//') === 0 ||
+              url.indexOf('http') === 0) {
+            return url; // leave data and absolute URIs untouched
+          }
+
+          return "{{CDN_SERVER}}" + url;
+        },
+      },
+
+      files: [{
+        expand: true,
+        flatten: true,
+        src: ['client/dist/*.html'],
+        dest: 'client/dist/'
+      }]
+    }
   }
 });
 
 grunt.loadNpmTasks('grunt-browserify');
+grunt.loadNpmTasks('grunt-cdnify');
 grunt.loadNpmTasks('grunt-contrib-concat');
 grunt.loadNpmTasks('grunt-contrib-cssmin');
 grunt.loadNpmTasks('grunt-jsxhint');
@@ -97,5 +120,5 @@ grunt.loadNpmTasks('grunt-usemin');
 
 grunt.registerTask('default', ['jshint', 'sass', 'browserify', 'useminPrepare', 'concat']);
 grunt.registerTask('dev', ['default', 'watch']);
-grunt.registerTask('dist', ['replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin']);
+grunt.registerTask('dist', ['replace', 'default', 'cssmin', 'uglify', 'filerev', 'usemin', 'cdnify:all']);
 };
