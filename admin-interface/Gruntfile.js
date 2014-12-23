@@ -3,38 +3,38 @@ grunt.initConfig({
   browserify: {
     dist: {
       files: {
-        'build/js/browser.bundle.js': ['js/**/*.js']
+        'client/build/js/browser.bundle.js': ['client/js/**/*.js']
       }
     }
   },
   jshint: {
-      all: ['Gruntfile.js', 'js/**/*.js']
+      all: ['Gruntfile.js', 'client/js/**/*.js']
   },
   sass: {
     dist: {
       files: {
-        'build/css/main.css': 'scss/main.scss'
+        'client/build/css/main.css': 'client/scss/main.scss'
       }
     }
   },
   useminPrepare: {
-    html: 'index.html',
+    html: 'client/index.html',
     options: {
-      dest: 'dist'
+      dest: 'client/dist'
     }
   },
   usemin: {
-    html: 'dist/index.html'
+    html: 'client/dist/index.html'
   },
   filerev: {
     dist: {
-      src: ['dist/css/main.min.css', 'dist/js/browser.bundle.min.js']
+      src: ['client/dist/css/main.min.css', 'client/dist/js/browser.bundle.min.js']
     }
   },
   uglify: {
     dist: {
       files: {
-        'dist/js/browser.bundle.min.js': 'build/js/browser.bundle.js'
+        'client/dist/js/browser.bundle.min.js': 'client/build/js/browser.bundle.js'
       },
       options: {
         sourceMap: true
@@ -43,8 +43,8 @@ grunt.initConfig({
   },
   copy: {
     html: {
-      src: 'index.html',
-      dest: 'dist/index.html'
+      src: 'client/index.html',
+      dest: 'client/dist/index.html'
     }
   },
   watch: {
