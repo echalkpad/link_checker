@@ -9,7 +9,7 @@ var httpProxy = require('http-proxy');
 
 var app = express();
 
-if (config.baseURL == null) {
+if (config.baseURL === null || config.baseURL === undefined) {
     throw new Error("Must specify base URL in config!");
 } else {
     console.log("Will proxy API requests to " + config.baseURL);
