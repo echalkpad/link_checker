@@ -17,7 +17,9 @@
     "q": "~1.1.2",
     "react": "~0.12.0",
     "underscore": "~1.7.0",
-    "hogan.js": "~3.0.2"
+    "hogan.js": "~3.0.2",
+    "http-proxy": "~1.8.1",
+    "node-uuid": "~1.4.2"
   },
   "devDependencies": {
     "browserify": "^4.2.0",

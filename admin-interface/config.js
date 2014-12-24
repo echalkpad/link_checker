@@ -1,5 +1,6 @@
 module.exports = {
-    port: 8080,
+    port: 8888,
     isProduction: function() { return true; },
-    cdnServer: ""
+    cdnServer: "",
+    baseURL: "http://localhost:8080"
 };

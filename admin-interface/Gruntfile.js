@@ -8,7 +8,7 @@ grunt.initConfig({
     }
   },
   jshint: {
-      all: ['Gruntfile.js', 'client/js/**/*.js']
+      all: ['Gruntfile.js', '*.js', 'server/**/*.js', 'client/js/**/*.js']
   },
   sass: {
     dist: {
