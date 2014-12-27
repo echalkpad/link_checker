@@ -131,9 +131,38 @@ To think about:
 
 ## Frontend
 
+The front-end consists of a React front-end that lets users add, delete, and view status of various monitored pages.
+
+The front-end optimistically shows monitored page status as added or deleted and syncs them in the background. The syncer runs from a single queue so updates from a single client should be consistent.
+
+
 ### Actions and data flow
 
 ![image](frontend_arch.png)
+
+There are several interactions around adding monitored pages:
+
+* A user can add a MonitoredPage from the UI.
+* A user can delete a  MonitoredPage from the UI.
+* The server syncer can report that a pending add/delete operation has completed.
+* The server syncer can add, delete, or update status of any MonitoredPages because the state has been changed by some other part of the system.
+
+In the front-end system, the UI looks something like:
+
+	url: URL of the monitored page
+	status: Status of the monitored page (eg does it contain broken links?)
+	sync_status: Are there any pending operations for this Monitored Page? (eg user has added it locally but it has not yet been posted to the data API)
+	
+### Synchronizing with Server
+
+The front-end is also periodically retrieving monitored page status and the list of monitored pages for the user. 
+
+The new list is merged with any pending sync operations and it is assumed that the pending operations will eventually be synced.
+
+There are two different operations that can be synced to the server - `ADD_MONITORED_PAGE` or `DELETE_MONITORED_PAGE`. A MonitoredPage can also have status `SYNCED`. When a server POSTs successfully sends the given request to the server it will post a `UPDATE_SYNC_STATUS` action with the given URL and operation that just completed and the store will update its status to synced if there is a match.  
+
+*Note*: Since the key for a server operation is `{url, op_type}` there is room in this design for the UI to get out of sync with the server if multiple operations for the same URL are issued and not synced for the server. For example, say the user adds a MonitoredPage, deletes it, and then adds it back in rapid succession. The sync state for that url will be `ADD_SYNCING` - when the first `UPDATE_SYNC_STATUS` is processed it will set the state for that node to `SYNCED` even though there are pending operations in the queue. This should be a pretty rare case so is not designed around. 
+
 # Data Design
 
 TODO fillin

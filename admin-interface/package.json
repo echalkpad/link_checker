@@ -4,7 +4,7 @@
   "description": "Admin interface for link_checker app",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Eric Ogren <eogren@gmail.com>",
   "license": "Apache 2",
@@ -38,7 +38,8 @@
     "react-tools": "~0.12.2",
     "reactify": "^0.17.1",
     "superagent": "~0.21.0",
-    "q-superagent": "~1.0.1"
+    "q-superagent": "~1.0.1",
+    "jest-cli": "~0.2.1"
   },
   "browserify": {
     "transform": [

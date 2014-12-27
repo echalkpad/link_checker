@@ -3,7 +3,9 @@ var Fluxxor = require('fluxxor');
 
 var MonitoredPageStore = Fluxxor.createStore({
     initialize: function() {
-        this.monitored_pages = [];
+        this.monitored_pages = {};
+        this.USER_ADDED_PAGE = "user_added_page";
+        this.USER_DELETED_PAGE = "user_deleted_page";
 
         this.bindActions(
             constants.ADD_MONITORED_PAGE, this.onAddMonitoredPage,
@@ -12,17 +14,40 @@ var MonitoredPageStore = Fluxxor.createStore({
     },
 
     onAddMonitoredPage: function(payload) {
-        this.monitored_pages.push({url: payload.url, status: payload.status, sync_id: payload.sync_id, sync_status: payload.sync_status});
-        this.emit('change');
+        var url = payload.url;
+
+        var changed = false;
+
+        if (this.monitored_pages.hasOwnProperty(url)) {
+            if (this.monitored_pages[url].sync_status === constants.sync_status.DELETE_SYNCING) {
+                this.monitored_pages[url].sync_status = constants.sync_status.ADD_SYNCING;
+                changed = true;
+            }
+
+            // If it's not DELETE_SYNCING that means it's already been added
+            // and we can ignore the update.
+        } else {
+            this.monitored_pages[url] = {url: url, status: constants.status.UNKNOWN, sync_status: constants.sync_status.ADD_SYNCING};
+            changed = true;
+        }
+
+        if (changed) {
+            this.emit('change');
+            this.emit(this.USER_ADDED_PAGE, url);
+        }
     },
 
     onDeleteMonitoredPage: function(payload) {
-        this.monitored_pages = this.monitored_pages.filter(
-            function excludeUrl(x) {
-                return x.url !== payload.url;
+        var url = payload.url;
+        if (this.monitored_pages.hasOwnProperty(url)) {
+            var item = this.monitored_pages[url];
+            console.log(item);
+            if (item.sync_status !== constants.sync_status.DELETE_SYNCING) {
+                item.sync_status = constants.sync_status.DELETE_SYNCING;
+                this.emit('change');
+                this.emit(this.USER_DELETED_PAGE, url);
             }
-        );
-        this.emit('change');
+        }
     }
 });
 
