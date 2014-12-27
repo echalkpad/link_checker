@@ -3,7 +3,7 @@ grunt.initConfig({
   browserify: {
     dist: {
       files: {
-        'client/build/js/browser.bundle.js': ['client/js/**/*.js']
+        'client/build/js/browser.bundle.js': ['client/js/**/*.js', '!**/__tests__/**']
       }
     }
   },
