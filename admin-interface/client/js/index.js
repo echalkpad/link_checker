@@ -22,11 +22,8 @@ var actions = {
      * Add a new monitored page with the given fields
      * @param payload fields
      */
-    addMonitoredPage: function(payload) {
-        var sync_id = _.uniqueId();
-        payload.sync_id = sync_id;
-
-        this.dispatch({type: constants.ADD_MONITORED_PAGE, payload: payload});
+    addMonitoredPage: function(url) {
+        this.dispatch(constants.ADD_MONITORED_PAGE, {url: url});
     },
 
     /**
@@ -34,11 +31,24 @@ var actions = {
      * @param url URL to delete
      */
     deleteMonitoredPage: function(url) {
-        this.dispatch({type: constants.DELETE_MONITORED_PAGE, payload: {url: url}});
+        this.dispatch(constants.DELETE_MONITORED_PAGE, {url: url});
+    },
+
+    updateMonitoredPages: function(payload) {
+        this.dispatch(constants.UPDATE_MONITORED_PAGES_FROM_SERVER, payload);
+    },
+
+    addSynced: function(url) {
+        this.dispatch(constants.UPDATE_SERVER_SYNC_STATUS, {url: url, op: constants.ADD_MONITORED_PAGE});
+    },
+
+    deleteSynced: function(url) {
+        this.dispatch(constants.UPDATE_SERVER_SYNC_STATUS, {url: url, op: constants.DELETE_MONITORED_PAGE});
     }
 };
 
 var flux = new Fluxxor.Flux(stores, actions);
+var syncer = new Syncer(flux);
 
 /* DEVONLY */
 flux.on("dispatch", function(type, payload) {
@@ -70,4 +80,4 @@ React.render(
     document.getElementById('container')
 );
 
-setInterval(Syncer.updateMonitoredPages(), 5000);
+setInterval(syncer.updateMonitoredPages(), 5000);

@@ -4,6 +4,7 @@ var React = require('react');
 var RootPage = require('./rootpage');
 var Fluxxor = require('fluxxor');
 var url = require('url');
+var _ = require('underscore');
 
 var urlHostNameCompare = function(url1, url2) {
     var parsed1 = url.parse(url1.url).host.toLowerCase();
@@ -30,7 +31,9 @@ var RootPageList = React.createClass({
     },
 
     render: function() {
-        var sortedNodes = this.props.data.slice().sort(urlHostNameCompare);
+        var sortedNodes = _.map(this.props.data, function(value, key) {
+            return {url: value.url, status: value.status, sync_status: value.sync_status };
+        }).sort(urlHostNameCompare);
         var new_url_status = this._validate_url(this.state.new_url);
 
         var nodes = sortedNodes.map(function (rp) {
@@ -70,7 +73,7 @@ var RootPageList = React.createClass({
     },
 
     _onNew: function() {
-        this.getFlux().actions.addMonitoredPage({url: this.state.new_url, status: constants.status.UNKNOWN, sync_status: constants.server_status.SYNCING});
+        this.getFlux().actions.addMonitoredPage(this.state.new_url);
     }
 
 });

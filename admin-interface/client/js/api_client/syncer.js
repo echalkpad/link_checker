@@ -30,24 +30,76 @@ var sendWithRetry = function(senderFn) {
         function error(why) {
             var timeout = retry;
             retry = newRetry();
+            // retPromise.progres...
             setTimeout(function() { sendWithRetry(senderFn); }, timeout);
         });
 
     return retPromise.promise;
 };
 
-var Syncer = {
-    updateMonitoredPages: function() {
-        var get = sendWithRetry(function() {
-            return request.get('/api/v1/monitored_page/').q();
-        });
+var Syncer = function(flux) {
+    this.flux = flux;
 
-        get.then(function resolveData(data) {
-            console.log(data.body);
-        }, function onError(why) {
-            console.log("Error: " + why);
-        });
-    }
+    // Subscribe to MPS events
+    var store = flux.store("MonitoredPageStore");
+    var self = this;
+
+    store.on(store.USER_ADDED_PAGE, function(url) {
+        self.addMonitoredPage(url);
+    });
+
+    store.on(store.USER_DELETED_PAGE, function(url) {
+        self.deleteMonitoredPage(url);
+    });
+};
+
+Syncer.prototype.updateMonitoredPages = function() {
+    var get = sendWithRetry(function() {
+        return request.get('/api/v1/monitored_page/').q();
+    });
+
+    var self = this;
+    get.then(function resolveData(data) {
+        self.flux.actions.updateMonitoredPages(data.body);
+    }, function onError(why) {
+        console.log("Error: " + why);
+    });
+};
+
+Syncer.prototype.addMonitoredPage = function(url) {
+    var self = this;
+    var post = sendWithRetry(function() {
+        return request
+                .post('/api/v1/monitored_page')
+                .send({url: url})
+                .q();
+
+    });
+
+    post.then(function resolveData(data) {
+        self.flux.actions.addSynced(url);
+    },
+
+    function error(why) {
+        // TODO: fill me in
+    });
+};
+
+Syncer.prototype.deleteMonitoredPage = function(url) {
+    var self = this;
+    var deleteOp = sendWithRetry(function() {
+        return request
+                .del('/api/v1/monitored_page/' + url)
+                .q();
+    });
+
+    deleteOp.then(function resolveData(data) {
+        self.flux.actions.deleteSynced(url);
+    },
+
+    function error(why) {
+        // TODO: fill me in
+    });
 };
 
 module.exports = Syncer;

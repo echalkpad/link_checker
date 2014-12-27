@@ -157,6 +157,10 @@ In the front-end system, the UI looks something like:
 
 The front-end is also periodically retrieving monitored page status and the list of monitored pages for the user. 
 
+A `MonitoredPageStore` keeps track of all MonitoredPages retrieved from the server plus the list of any pending changes. When the user adds or deletes a MonitoredPage, the store emits an event.
+
+The `ServerSyncer` object is responsible for sending any add/delete events to the server, emitting an ACTION indicating the results of said operations, and also for simply retrieving the full list of MonitoredPages.
+
 The new list is merged with any pending sync operations and it is assumed that the pending operations will eventually be synced.
 
 There are two different operations that can be synced to the server - `ADD_MONITORED_PAGE` or `DELETE_MONITORED_PAGE`. A MonitoredPage can also have status `SYNCED`. When a server POSTs successfully sends the given request to the server it will post a `UPDATE_SYNC_STATUS` action with the given URL and operation that just completed and the store will update its status to synced if there is a match.  

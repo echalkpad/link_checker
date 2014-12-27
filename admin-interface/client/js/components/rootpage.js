@@ -23,7 +23,7 @@ var RootPage = React.createClass({
     },
 
     _onDelete: function() {
-        this.getFlux().actions.deleteMonitoredPage(this.props.url);
+        this.getFlux().actions.deleteMonitoredPage(this.props.rp.url);
     },
 
     _statusToString: function(status) {
@@ -41,9 +41,10 @@ var RootPage = React.createClass({
 
     _serverStatusToString: function(status) {
         switch(status) {
-            case constants.server_status.SYNCING:
+            case constants.sync_status.ADD_SYNCING:
+            case constants.sync_status.DELETE_SYNCING:
                 return "SYNCING";
-            case constants.server_status.SYNCED:
+            case constants.sync_status.SYNCED:
                 return "SYNCED";
             default:
                 return status;
