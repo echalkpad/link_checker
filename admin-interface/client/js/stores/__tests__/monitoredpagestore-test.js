@@ -15,6 +15,10 @@ var newFlux = function() {
     return new Fluxxor.Flux(stores, actions);
 };
 
+var findByUrl = function(store, url) {
+    return _.find(store, function(x) { return x.url === url;});
+};
+
 describe('MonitoredPageStore', function() {
     var flux;
     var changesEmitted;
@@ -128,6 +132,34 @@ describe('MonitoredPageStore', function() {
     });
 
     it ('can reconcile server updates with the pending list', function() {
+        var newURL = 'http://www.foo.com';
 
+        var serverURLs = [
+            {url: 'http://www.page1.com', status: constants.status.GOOD},
+            {url: 'http://www.bad.com', stats: constants.status.BAD}
+        ];
+
+        var expectedURLs = [{url: newURL, status: constants.status.UNKNOWN}].concat(serverURLs);
+
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: newURL}});
+        flux.dispatcher.dispatch({type: constants.UPDATE_MONITORED_PAGES_FROM_SERVER, payload: serverURLs});
+
+        expect(_.size(store.monitored_pages)).toEqual(_.size(serverURLs) + 1);
+
+        expect(addsEmitted).toEqual(1);
+        expectedURLs.forEach(function(expected) {
+            var entry = findByUrl(store.monitored_pages, expected.url);
+            // bit of a hack; the items we dispatched from the server have
+            // status GOOD and BAD so we can use that to derive sync status
+            var expectedSyncStatus = expected.status === constants.status.UNKNOWN ?
+                                        constants.sync_status.ADD_SYNCING :
+                                        constants.sync_status.SYNCED;
+            expect(entry).toBeDefined();
+            if (entry !== undefined) {
+                expect(entry.url).toEqual(expected.url);
+                expect(entry.status).toEqual(expected.status);
+                expect(entry.sync_status).toEqual(expectedSyncStatus);
+            }
+        });
     });
 });

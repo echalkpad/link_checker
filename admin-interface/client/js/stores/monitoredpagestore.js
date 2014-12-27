@@ -1,5 +1,6 @@
 var constants = require('../common/constants.js');
 var Fluxxor = require('fluxxor');
+var _ = require('underscore');
 
 var opMatchesSyncStatus = function(op_status, sync_status) {
     return ((op_status === constants.ADD_MONITORED_PAGE && sync_status === constants.sync_status.ADD_SYNCING) ||
@@ -15,7 +16,8 @@ var MonitoredPageStore = Fluxxor.createStore({
         this.bindActions(
             constants.ADD_MONITORED_PAGE, this.onAddMonitoredPage,
             constants.DELETE_MONITORED_PAGE, this.onDeleteMonitoredPage,
-            constants.UPDATE_SERVER_SYNC_STATUS, this.onUpdateServerSyncStatus
+            constants.UPDATE_SERVER_SYNC_STATUS, this.onUpdateServerSyncStatus,
+            constants.UPDATE_MONITORED_PAGES_FROM_SERVER, this.onUpdatePagesFromServer
         );
     },
 
@@ -73,6 +75,34 @@ var MonitoredPageStore = Fluxxor.createStore({
             }
             this.emit('change');
         }
+    },
+
+    onUpdatePagesFromServer: function(payload) {
+        var newPages = {};
+        payload.forEach(function(x) {
+            newPages[x.url] = {url: x.url, status: x.status, sync_status: constants.sync_status.SYNCED};
+        });
+
+        var pendingPages = this._getPendingPages();
+
+        pendingPages.forEach(function(x) {
+            newPages[x.url] = x;
+        });
+
+        this.monitored_pages = newPages;
+        this.emit('change');
+    },
+
+    // can't use filter on objects
+    _getPendingPages: function() {
+        var ret = [];
+        _.each(this.monitored_pages, function(value, key) {
+            if (value.sync_status !== constants.sync_status.SYNCED) {
+                ret.push(value);
+            }
+        });
+
+        return ret;
     }
 });
 

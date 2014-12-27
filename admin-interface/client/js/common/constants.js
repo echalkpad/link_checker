@@ -15,7 +15,7 @@ module.exports = {
     // Server has sent a new list of monitored pages, send these
     // into the store.
     // Payload: [{url, status} tuples]
-    UPDATE_MONITORED_PAGES_FROM_SERVER: "UPDATE_MONITORED_PAGES",
+    UPDATE_MONITORED_PAGES_FROM_SERVER: "UPDATE_MONITORED_PAGES_FROM_SERVER",
 
     // MonitoredPage statuses and sync_statuses
     // XXX probably doesn't need to be part of constants.js
