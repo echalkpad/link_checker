@@ -28,6 +28,6 @@ module.exports = {
     sync_status: {
         ADD_SYNCING: 0,
         DELETE_SYNCING: 1,
-        SYNCED: 1
+        SYNCED: 2
     }
 };

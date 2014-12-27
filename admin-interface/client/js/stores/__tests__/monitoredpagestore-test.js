@@ -112,12 +112,19 @@ describe('MonitoredPageStore', function() {
     });
 
 
-    it ('can process delete sync updates', function() {
-
-    });
-
     it ('handles the sync update for add/delete/add case', function() {
+        var URL = 'http://www.foo.com/';
 
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: URL}});
+        flux.dispatcher.dispatch({type: constants.DELETE_MONITORED_PAGE, payload: {url: URL}});
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: URL}});
+
+        flux.dispatcher.dispatch({type: constants.UPDATE_SERVER_SYNC_STATUS, payload: {url: URL, op: constants.ADD_MONITORED_PAGE}});
+        flux.dispatcher.dispatch({type: constants.UPDATE_SERVER_SYNC_STATUS, payload: {url: URL, op: constants.DELETE_MONITORED_PAGE}});
+        flux.dispatcher.dispatch({type: constants.UPDATE_SERVER_SYNC_STATUS, payload: {url: URL, op: constants.ADD_MONITORED_PAGE}});
+
+        expect(_.size(store.monitored_pages)).toEqual(1);
+        expect(store.monitored_pages[URL].sync_status).toEqual(constants.sync_status.SYNCED);
     });
 
     it ('can reconcile server updates with the pending list', function() {
