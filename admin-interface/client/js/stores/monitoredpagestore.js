@@ -17,7 +17,8 @@ var MonitoredPageStore = Fluxxor.createStore({
             constants.ADD_MONITORED_PAGE, this.onAddMonitoredPage,
             constants.DELETE_MONITORED_PAGE, this.onDeleteMonitoredPage,
             constants.UPDATE_SERVER_SYNC_STATUS, this.onUpdateServerSyncStatus,
-            constants.UPDATE_MONITORED_PAGES_FROM_SERVER, this.onUpdatePagesFromServer
+            constants.UPDATE_MONITORED_PAGES_FROM_SERVER, this.onUpdatePagesFromServer,
+            constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, this.onToggleExpanded
         );
     },
 
@@ -35,7 +36,12 @@ var MonitoredPageStore = Fluxxor.createStore({
             // If it's not DELETE_SYNCING that means it's already been added
             // and we can ignore the update.
         } else {
-            this.monitored_pages[url] = {url: url, status: constants.status.UNKNOWN, sync_status: constants.sync_status.ADD_SYNCING};
+            this.monitored_pages[url] = {
+                url: url,
+                status: constants.status.UNKNOWN,
+                sync_status: constants.sync_status.ADD_SYNCING,
+                expanded: false
+            };
             changed = true;
         }
 
@@ -79,8 +85,17 @@ var MonitoredPageStore = Fluxxor.createStore({
 
     onUpdatePagesFromServer: function(payload) {
         var newPages = {};
+        var self = this;
+
         payload.forEach(function(x) {
-            newPages[x.url] = {url: x.url, status: x.status, sync_status: constants.sync_status.SYNCED};
+            var oldItem = self.monitored_pages[x.url];
+            var expanded = (oldItem === undefined) ? false : oldItem.expanded;
+            newPages[x.url] = {
+                url: x.url,
+                status: x.status,
+                sync_status: constants.sync_status.SYNCED,
+                expanded: expanded
+            };
         });
 
         var pendingPages = this._getPendingPages();
@@ -90,6 +105,13 @@ var MonitoredPageStore = Fluxxor.createStore({
         });
 
         this.monitored_pages = newPages;
+        this.emit('change');
+    },
+
+    onToggleExpanded: function(payload) {
+        var url = payload.url;
+
+        this.monitored_pages[url].expanded = !this.monitored_pages[url].expanded;
         this.emit('change');
     },
 

@@ -131,6 +131,52 @@ describe('MonitoredPageStore', function() {
         expect(store.monitored_pages[URL].sync_status).toEqual(constants.sync_status.SYNCED);
     });
 
+    it ('can toggle expanded state to on', function() {
+        var URL = 'http://www.foo.com';
+
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: URL}});
+        flux.dispatcher.dispatch({type: constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, payload: {url: URL}});
+
+        expect(changesEmitted).toEqual(2);
+        expect(store.monitored_pages[URL].expanded).toEqual(true);
+    });
+
+    it ('can toggle expanded state to off', function() {
+        var URL = 'http://www.foo.com';
+
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: URL}});
+        flux.dispatcher.dispatch({type: constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, payload: {url: URL}});
+        flux.dispatcher.dispatch({type: constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, payload: {url: URL}});
+
+        expect(changesEmitted).toEqual(3);
+        expect(store.monitored_pages[URL].expanded).toEqual(false);
+    });
+
+    it ('keeps expanded status the same when pulling down an update', function() {
+        var expandedURL = 'http://www.expanded.com';
+        var unexpandedURL = 'http://www.unexpanded.com';
+
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: expandedURL}});
+        flux.dispatcher.dispatch({type: constants.ADD_MONITORED_PAGE, payload: {url: unexpandedURL}});
+        flux.dispatcher.dispatch({type: constants.UPDATE_SERVER_SYNC_STATUS, payload: {url: expandedURL, op: constants.ADD_MONITORED_PAGE}});
+        flux.dispatcher.dispatch({type: constants.UPDATE_SERVER_SYNC_STATUS, payload: {url: unexpandedURL, op: constants.ADD_MONITORED_PAGE}});
+
+        flux.dispatcher.dispatch({type: constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, payload: {url: expandedURL}});
+
+        var serverURLs = [
+            {url: expandedURL, status: constants.status.GOOD},
+            {url: unexpandedURL, status: constants.status.GOOD}
+        ];
+
+        flux.dispatcher.dispatch({type: constants.UPDATE_MONITORED_PAGES_FROM_SERVER, payload: serverURLs});
+
+        expect(store.monitored_pages.hasOwnProperty(expandedURL)).toEqual(true);
+        expect(store.monitored_pages[expandedURL].expanded).toEqual(true);
+
+        expect(store.monitored_pages.hasOwnProperty(unexpandedURL)).toEqual(true);
+        expect(store.monitored_pages[unexpandedURL].expanded).toEqual(false);
+    });
+
     it ('can reconcile server updates with the pending list', function() {
         var newURL = 'http://www.foo.com';
 

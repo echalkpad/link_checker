@@ -17,6 +17,10 @@ module.exports = {
     // Payload: [{url, status} tuples]
     UPDATE_MONITORED_PAGES_FROM_SERVER: "UPDATE_MONITORED_PAGES_FROM_SERVER",
 
+    // Toggle the expanded view for a MonitoredPage.
+    // Payload: {url: url}
+    TOGGLE_MONITORED_PAGE_EXPANDED_VIEW: "TOGGLE_MONITORED_PAGE_EXPANDED_VIEW",
+
     // MonitoredPage statuses and sync_statuses
     // XXX probably doesn't need to be part of constants.js
     status: {
