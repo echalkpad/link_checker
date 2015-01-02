@@ -63,7 +63,7 @@ public class ScraperMessageKafkaConsumer {
                         ScraperMessages.ScraperMessage msg = ProtobufSerializer.deserializeScraperMessage(raw);
                         processor.consumeScraperMessage(msg);
                     } catch (IllegalArgumentException e) {
-                        logger.warn(threadNumber + ": Failed to decode kafka msg at " + kafka_msg.offset());
+                        logger.warn(threadNumber + ": Failed to decode kafka msg at " + kafka_msg.offset() + ": " + e.toString());
                     }
 
                 }

@@ -66,7 +66,7 @@ public class ProtobufSerializer {
         try {
             return ScraperMessages.ScraperMessage.parseFrom(rawData);
         } catch (InvalidProtocolBufferException e) {
-            throw new IllegalArgumentException("Bad bytestream; could not deserialize message");
+            throw new IllegalArgumentException("Bad bytestream; could not deserialize message: " + e.toString());
         }
     }
 
