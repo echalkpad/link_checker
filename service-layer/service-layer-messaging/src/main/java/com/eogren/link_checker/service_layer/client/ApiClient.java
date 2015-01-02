@@ -7,10 +7,12 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +37,12 @@ public class ApiClient {
         }
 
         this.baseUrl = baseUrl;
-        httpClient = HttpClients.createDefault();
+
+        PoolingHttpClientConnectionManager poolingConnManager = new PoolingHttpClientConnectionManager();
+        poolingConnManager.setMaxTotal(10);
+        poolingConnManager.setDefaultMaxPerRoute(5);
+
+        httpClient = HttpClients.custom().setConnectionManager(poolingConnManager).build();
         mapper = new ObjectMapper();
     }
 
