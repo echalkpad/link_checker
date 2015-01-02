@@ -21,10 +21,10 @@ public class ScrapeUpdateProcessor extends ScraperMessageProcessor {
     public void consumeScrapeUpdate(ScraperMessages.ScrapeUpdate msg) {
         logger.debug("Processing ScrapeUpdate message for " + msg.getNewStatus().getUrl());
 
-        for (String url : msg.getNewStatus().getLinksList()) {
-            logger.debug("Queuing ScrapeIfNecessary " + url);
+        for (ScraperMessages.Link l : msg.getNewStatus().getLinksList()) {
+            logger.debug("Queuing ScrapeIfNecessary " + l.getUrl());
             try {
-                commandQueue.put(new ScheduleScrapeIfNecessaryCommand(url));
+                commandQueue.put(new ScheduleScrapeIfNecessaryCommand(l.getUrl()));
             } catch (InterruptedException e) {
                 logger.error("Interrupted while queuing message, continuing");
             }
