@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	"code.google.com/p/go.net/html"
 	"code.google.com/p/go.net/html/atom"
-	"fmt"
-	"net/url"
 )
 
 // Link represents a scraped link from a webpage.
@@ -29,6 +30,8 @@ func NewLinkExtractor() LinkExtractor {
 }
 
 /*ExtractLinksFromPage will scrape a webpage searching for any clickable links.
+ * It throws away mailto: links or other nonactionable ones
+ *
  * Params:
  *  baseURL: Is the URL of the page from the reader. Any relative links will be resolved from
  *  this base URL.
@@ -57,6 +60,8 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 
 	var pendingLink *Link
 
+	// use the html tokenizer in streaming mode just in case we have some
+	// giant web page to process.
 	for {
 		tokenType := tokenizer.Next()
 		if tokenType == html.ErrorToken {
@@ -84,7 +89,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 			pendingLink = &Link{URL: href}
 
 			if tokenType == html.SelfClosingTagToken {
-				links = append(links, pendingLink)
+				links = addLinkIfValid(links, pendingLink)
 				continue
 			}
 
@@ -92,7 +97,7 @@ func (l *linkExtractorDefault) ExtractLinksFromPage(baseURLS string, r io.Reader
 			state = InsideLink
 		case InsideLink:
 			if tokenType == html.EndTagToken && token.DataAtom == atom.A {
-				links = append(links, pendingLink)
+				links = addLinkIfValid(links, pendingLink)
 				state = SearchForLink
 				pendingLink = &Link{}
 				continue
@@ -131,4 +136,14 @@ func getAttribute(t *html.Token, attr string) (string, error) {
 	}
 
 	return "", fmt.Errorf("Attr %s not found in %v", attr, t)
+}
+
+func addLinkIfValid(links []*Link, pendingLink *Link) []*Link {
+	lcURL := strings.ToLower(pendingLink.URL)
+
+	if !strings.HasPrefix(lcURL, "mailto") {
+		links = append(links, pendingLink)
+	}
+
+	return links
 }

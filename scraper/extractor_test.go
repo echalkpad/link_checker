@@ -25,6 +25,9 @@ var relativeLinkHTML = `
       <h1>This is a header</h1>
       <p>I want to go to<a href="/leading-slash">Leading Slash</a>
       <p><a href="../relative">Relative</a></p>
+      <p><a href="../relative2" />Self Closed</p>
+      <p>Mail <a href="maiLTO:foo@example.com">foo@example.com</a> for help.</p>
+      <p>Mail <a href="mailto:foo@example.com" /> self closed for help.</p>
    </body>
  </html>
 `
@@ -63,12 +66,13 @@ func TestCanExtractRelativeLinks(t *testing.T) {
 		t.Errorf("Expected 0 warnings from parsing relativeLinkHTML, got %d", len(warnings))
 	}
 
-	if len(links) != 2 {
-		t.Fatalf("Expected 2 links in relativeLinkHTML, found %d", len(links))
+	if len(links) != 3 {
+		t.Fatalf("Expected 3 links in relativeLinkHTML, found %d", len(links))
 	}
 
 	checkLink(t, links[0], "http://www.bar.com/leading-slash", "Leading Slash")
 	checkLink(t, links[1], "http://www.bar.com/some_dir/relative", "Relative")
+	checkLink(t, links[2], "http://www.bar.com/some_dir/relative2", "")
 
 }
 
