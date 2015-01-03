@@ -149,7 +149,7 @@ public class StatusUpdaterTest {
             Thread.sleep(100);
         } catch (InterruptedException ex) {}
 
-        assertEquals(2, testClient.getStatusUpdates().size());
+        assertEquals("Expected message processor to have consumed 2 messages", 2, testClient.getStatusUpdates().size());
 
         System.out.println(testClient.getStatusUpdates().get(0));
         System.out.println(testClient.getStatusUpdates().get(1));
