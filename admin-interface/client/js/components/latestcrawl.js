@@ -20,8 +20,12 @@ var LatestCrawl = React.createClass({
 
         return (<div>
                     <table className="crawlReport">
-                        <tr><th>URL</th><th>Anchor Text</th><th>Status</th></tr>
-                        {rows}
+                        <thead>
+                            <tr><th>URL</th><th>Anchor Text</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {rows}
+                        </tbody>
                     </table>
                 </div>);
     }
