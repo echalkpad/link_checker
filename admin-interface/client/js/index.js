@@ -43,7 +43,8 @@ React.render(
     document.getElementById('container')
 );
 
-setInterval(syncer.updateMonitoredPages(), 5000);
+setInterval(function() { syncer.updateMonitoredPages(); }, 5000);
+
 setInterval(function updateExpandedCrawls() {
     var expandedCrawls = stores.MonitoredPageStore.getExpandedPages();
     expandedCrawls.forEach(function(crawl) {
