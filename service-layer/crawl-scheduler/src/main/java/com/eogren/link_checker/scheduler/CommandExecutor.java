@@ -109,8 +109,6 @@ public class CommandExecutor {
                     produceScrapeRequests();
                 } else if (c instanceof ScheduleScrapeIfNecessaryCommand) {
                     scheduleScrapesIfNecessary((ScheduleScrapeIfNecessaryCommand) c);
-                } else if (c instanceof CheckMonitoredPagesCommand) {
-                    checkMonitoredPages();
                 } else {
                     logger.warn(String.format("Unknown message type %s received, skipping", c.getClass().getName()));
                 }
@@ -125,7 +123,7 @@ public class CommandExecutor {
         logger.info("mpTimerWorker: start");
         while (!stop.get()) {
             try {
-                inputQueue.put(new CheckMonitoredPagesCommand());
+                checkMonitoredPages();
                 Thread.sleep(monitoredPageInterval);
             } catch (InterruptedException e) {
                 // continue

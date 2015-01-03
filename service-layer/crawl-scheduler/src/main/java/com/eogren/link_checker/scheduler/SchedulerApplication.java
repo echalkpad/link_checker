@@ -36,7 +36,7 @@ public class SchedulerApplication {
         mainLoop.start();
 
         // Set up Kafka Consumer
-        ScrapeUpdateProcessor processor = new ScrapeUpdateProcessor(mainLoop.getInputQueue());
+        ScrapeUpdateProcessor processor = new ScrapeUpdateProcessor(mainLoop.getInputQueue(), apiClient);
         ScraperMessageKafkaConsumer consumer = new ScraperMessageKafkaConsumer(
                 config.getKafkaConfig(), config.getKafkaConfig().getConsumerGroup(), processor
         );
