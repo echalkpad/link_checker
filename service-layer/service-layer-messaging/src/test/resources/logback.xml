@@ -9,7 +9,7 @@
     </appender>
 
     <logger name="com.eogren" level="DEBUG" />
-    <logger name="kafka" level="DEBUG" />
+    <logger name="kafka" level="INFO" />
 
     <root level="warn">
         <appender-ref ref="STDOUT"/>

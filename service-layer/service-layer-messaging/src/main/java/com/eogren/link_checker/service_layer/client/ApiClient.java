@@ -4,9 +4,11 @@ import com.eogren.link_checker.service_layer.api.CrawlReport;
 import com.eogren.link_checker.service_layer.api.MonitoredPage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -16,6 +18,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * The ApiClient is used to contact the service layer API.
@@ -38,11 +41,25 @@ public class ApiClient {
 
         this.baseUrl = baseUrl;
 
+        SocketConfig sock_config = SocketConfig.custom().setSoTimeout(3000).build();
+
+        RequestConfig req_config = RequestConfig.custom()
+                .setSocketTimeout(3000)
+                .setConnectTimeout(3000)
+                .setConnectionRequestTimeout(3000)
+                .setStaleConnectionCheckEnabled(true)
+                .build();
+
         PoolingHttpClientConnectionManager poolingConnManager = new PoolingHttpClientConnectionManager();
         poolingConnManager.setMaxTotal(10);
         poolingConnManager.setDefaultMaxPerRoute(5);
 
-        httpClient = HttpClients.custom().setConnectionManager(poolingConnManager).build();
+        httpClient = HttpClients
+                .custom()
+                        .setConnectionManager(poolingConnManager)
+                        .setDefaultRequestConfig(req_config)
+                        .setDefaultSocketConfig(sock_config)
+                        .build();
         mapper = new ObjectMapper();
     }
 
@@ -52,6 +69,31 @@ public class ApiClient {
     public List<MonitoredPage> retrieveAllMonitoredPages() throws IOException {
         return getMonitoredPageListFromUrl(getUrl("/api/v1/monitored_page/"));
     }
+
+    /**
+     * Retrieve a single monitored page
+     */
+    public Optional<MonitoredPage> getMonitoredPage(String url) throws IOException {
+        HttpGet req = new HttpGet(getUrl("/api/v1/monitored_page/" + url));
+        try (CloseableHttpResponse response = httpClient.execute(req)) {
+            if (response.getStatusLine().getStatusCode() == 404) {
+                return Optional.empty();
+            }
+
+            if (response.getStatusLine().getStatusCode() > 299) {
+                throw new IOException("API request to " + req.getURI().toString() + " returned error: " + response.getStatusLine().toString());
+            }
+
+            HttpEntity entity = response.getEntity();
+
+            return Optional.of(
+                    mapper.readValue(
+                            entity.getContent(),
+                            MonitoredPage.class)
+            );
+        }
+    }
+
     /**
      * Retrieve a list of Monitored Page objects that link to the given URL
      *
