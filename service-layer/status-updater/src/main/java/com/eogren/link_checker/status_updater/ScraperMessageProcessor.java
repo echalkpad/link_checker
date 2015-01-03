@@ -57,15 +57,19 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
                 // XXX This blockingquee approach only works if there is one status updater in the system.
                 // Separate Kafka topic with partition keys is probably better solution since then even if there are distributed workers they
                 // can magically coordinate among themselves.
-                int queueNo = Math.abs(pageToUpdate.getUrl().hashCode()) % workerQueues.size();
-                try {
-                    workerQueues.get(queueNo).put(pageToUpdate);
-                } catch (InterruptedException e) {
-                    logger.warn("consumeScrapeUpdate: Interrupted while trying to process " + pageToUpdate.getUrl());
-                }
+                updateMonitoredPageStatus(pageToUpdate);
             }
         } catch (IOException e) {
             logger.error("consumeScrapeUpdate: Error processing scraper message for " + msg.getNewStatus().getUrl() + ": " + e.getMessage() + "!", e);
+        }
+    }
+
+    public void updateMonitoredPageStatus(MonitoredPage p) {
+        int queueNo = Math.abs(p.getUrl().hashCode()) % workerQueues.size();
+        try {
+            workerQueues.get(queueNo).put(p);
+        } catch (InterruptedException e) {
+            logger.warn("consumeScrapeUpdate: Interrupted while trying to process " + p.getUrl());
         }
     }
 
@@ -99,6 +103,8 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
 
             // Get latest crawl reports for URLs that link to MonitoredPage
             // Update status
+            logger.debug("Updating status for page " + page.getUrl());
+
             try {
                 List<CrawlReport> reports = apiClient.getLatestCrawlReportsFollowingLinksFor(page.getUrl());
 
@@ -107,6 +113,7 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
                     pageStatus = MonitoredPage.Status.ERROR;
                 }
 
+                logger.info("Setting status for " + page.getUrl() + " to " + pageStatus.toString());
                 apiClient.updateMonitoredPageStatus(page, pageStatus);
 
             } catch (IOException e) {

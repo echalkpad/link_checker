@@ -29,10 +29,17 @@ public class StatusUpdaterApplication {
         apiClient = createApiClient(config);
         int numThreads = config.getNumThreads();
 
-        com.eogren.link_checker.messaging.consumer.ScraperMessageProcessor processor = new ScraperMessageProcessor(apiClient, numThreads);
+        ScraperMessageProcessor processor = new ScraperMessageProcessor(apiClient, numThreads);
         ScraperMessageKafkaConsumer consumer = new ScraperMessageKafkaConsumer(config.getKafkaConfig(), "status-updater", processor);
         consumer.start(numThreads);
 
+        try {
+            logger.info("Starting up so recalculating status for all monitored pages...");
+            apiClient.retrieveAllMonitoredPages().stream().forEach(processor::updateMonitoredPageStatus);
+        } catch (IOException e) {
+            logger.warn("IOException while retrieving monitored pages: " + e.toString());
+        }
+        
         logger.info("Started with " + numThreads + " threads.");
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
