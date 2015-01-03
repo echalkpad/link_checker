@@ -17,6 +17,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,7 +75,7 @@ public class ApiClient {
      * Retrieve a single monitored page
      */
     public Optional<MonitoredPage> getMonitoredPage(String url) throws IOException {
-        HttpGet req = new HttpGet(getUrl("/api/v1/monitored_page/" + url));
+        HttpGet req = new HttpGet(getUrl("/api/v1/monitored_page/" + URLEncoder.encode(url, "UTF-8")));
         try (CloseableHttpResponse response = httpClient.execute(req)) {
             if (response.getStatusLine().getStatusCode() == 404) {
                 return Optional.empty();
@@ -103,7 +104,7 @@ public class ApiClient {
      *                     TODO: Name is super long
      */
     public List<MonitoredPage> getMonitoredPagesThatLinkTo(String url) throws IOException {
-       return getMonitoredPageListFromUrl(getUrl("/api/v1/monitored_page/search?links_to=" + url));
+       return getMonitoredPageListFromUrl(getUrl("/api/v1/monitored_page/search?links_to=" + URLEncoder.encode(url, "UTF-8")));
     }
 
     /**
@@ -133,7 +134,7 @@ public class ApiClient {
      * @return TODO: Name is super long
      */
     public List<CrawlReport> getLatestCrawlReportsFollowingLinksFor(String url) throws IOException {
-        HttpGet req = new HttpGet(getUrl("/api/v1/crawl_report/search?links_from=" + url));
+        HttpGet req = new HttpGet(getUrl("/api/v1/crawl_report/search?links_from=" + URLEncoder.encode(url, "UTF-8")));
         try (CloseableHttpResponse response = httpClient.execute(req)) {
             if (response.getStatusLine().getStatusCode() > 299) {
                 throw new IOException("API request to " + req.getURI().toString() + " returned error: " + response.getStatusLine().toString());
@@ -155,7 +156,7 @@ public class ApiClient {
     public void updateMonitoredPageStatus(MonitoredPage page, MonitoredPage.Status pageStatus) throws IOException {
         MonitoredPage updateReq = new MonitoredPage(page.getUrl(), pageStatus);
 
-        HttpPut req = new HttpPut(getUrl("/api/v1/monitored_page/" + updateReq.getUrl()));
+        HttpPut req = new HttpPut(getUrl("/api/v1/monitored_page/" + URLEncoder.encode(updateReq.getUrl(), "UTF-8")));
 
         String json = mapper.writeValueAsString(updateReq);
 

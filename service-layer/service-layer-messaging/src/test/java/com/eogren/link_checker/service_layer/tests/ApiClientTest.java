@@ -34,7 +34,7 @@ public class ApiClientTest {
     @Test
     public void testGetOneMonitoredPage404() throws Exception {
         mockServerClient
-                .when(request().withPath("/api/v1/monitored_page/http://idontexist.com"))
+                .when(request().withPath("/api/v1/monitored_page/http%3A%2F%2Fidontexist.com"))
                 .respond(
                         response()
                                 .withStatusCode(404)
@@ -49,7 +49,7 @@ public class ApiClientTest {
     @Test
     public void testMonitoredPageValid() throws Exception {
         mockServerClient
-                .when(request().withPath("/api/v1/monitored_page/http://idoexist.com"))
+                .when(request().withPath("/api/v1/monitored_page/http%3A%2F%2Fidoexist.com"))
                 .respond(
                         response()
                         .withStatusCode(200)
