@@ -21,6 +21,10 @@ module.exports = {
     // Payload: {url: url}
     TOGGLE_MONITORED_PAGE_EXPANDED_VIEW: "TOGGLE_MONITORED_PAGE_EXPANDED_VIEW",
 
+    // Update latest crawl status for a given URL.
+    // Payload: {url, links}
+    UPDATE_LATEST_CRAWL_REPORT: "UPDATE_LATEST_CRAWL_REPORT",
+
     // MonitoredPage statuses and sync_statuses
     // XXX probably doesn't need to be part of constants.js
     status: {

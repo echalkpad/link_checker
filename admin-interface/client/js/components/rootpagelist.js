@@ -1,22 +1,14 @@
 /** @jsx React.DOM */
 var constants = require('../common/constants');
-var React = require('react');
+var React = require('react/addons');
 var RootPage = require('./rootpage');
 var Fluxxor = require('fluxxor');
 var url = require('url');
 var _ = require('underscore');
 
-var urlHostNameCompare = function(url1, url2) {
-    var parsed1 = url.parse(url1.url).host.toLowerCase();
-    var parsed2 = url.parse(url2.url).host.toLowerCase();
-
-    if (parsed1 < parsed2) {
-        return -1;
-    } else if (parsed1 > parsed2) {
-        return 1;
-    } else {
-        return 0;
-    }
+var monitoredPageCompareKey = function(mp) {
+    var parsed = url.parse(mp.url);
+    return parsed.host.toLowerCase() + '/' + parsed.hostname.toLowerCase();
 };
 
 var FluxMixin = Fluxxor.FluxMixin(React);
@@ -31,13 +23,17 @@ var RootPageList = React.createClass({
     },
 
     render: function() {
-        var sortedNodes = _.map(this.props.data, function(value, key) {
-            return {url: value.url, status: value.status, sync_status: value.sync_status };
-        }).sort(urlHostNameCompare);
+        // The data comes in right now as key: value pairs (key is the url). We
+        // just need an ordered array.
+        var sortedNodes = _.sortBy(_.values(this.props.monitored_pages), monitoredPageCompareKey);
         var new_url_status = this._validate_url(this.state.new_url);
+        var self = this;
 
         var nodes = sortedNodes.map(function (rp) {
-            return(<RootPage rp={rp} key={rp.url} />);
+            var crawl_report = self.props.latest_crawls.hasOwnProperty(rp.url) ?
+                                    self.props.latest_crawls[rp.url] :
+                                    null;
+            return(<RootPage rp={rp} key={rp.url} crawl_report={crawl_report}/>);
         });
 
         return(

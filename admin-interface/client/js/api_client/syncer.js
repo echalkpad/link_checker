@@ -1,3 +1,4 @@
+var async = require('async');
 var Q = require('q');
 var request = require('superagent');
 require('q-superagent')(request);
@@ -42,21 +43,67 @@ var sendWithRetry = function(senderFn) {
     return retPromise.promise;
 };
 
+var _getRowForLink = function(link, cb) {
+    // XXX could cache statusCode here so we're not always retrieving it
+    var get = sendWithRetry(function() {
+        return request.get('/api/v1/latest_crawl_report/' + encodeURIComponent(link.url)).q();
+    });
+
+    get.then(function resolveData(data) {
+        cb(null, {url: link.url, anchorText: link.anchorText, statusCode: data.body.statusCode});
+    }, function onError(why) {
+        cb(why, null);
+    });
+};
+
 var Syncer = function(flux) {
     this.flux = flux;
     this.queue = [];
 
     // Subscribe to MPS events
-    var store = flux.store("MonitoredPageStore");
+    this.store = flux.store("MonitoredPageStore");
     var self = this;
 
-    store.on(store.USER_ADDED_PAGE, function(url) {
+    this.store.on(this.store.USER_ADDED_PAGE, function(url) {
         self.addMonitoredPage(url);
     });
 
-    store.on(store.USER_DELETED_PAGE, function(url) {
+    this.store.on(this.store.USER_DELETED_PAGE, function(url) {
         self.deleteMonitoredPage(url);
     });
+
+    this.store.on(this.store.USER_TOGGLED_PAGE, function(url, newState) {
+        if (newState) {
+            self.getCrawlStatusForUrl(url);
+        }
+    });
+};
+
+Syncer.prototype.getCrawlStatusForUrl = function(url) {
+    var get = sendWithRetry(function() {
+        return request.get('/api/v1/latest_crawl_report/' + encodeURIComponent(url)).q();
+    });
+
+    var self = this;
+    var rows = [];
+    var p = get.then(function resolveData(data) {
+        rows.push({url: data.body.url, statusCode: data.body.statusCode, anchorText: "<self>"});
+        async.map(data.body.links, _getRowForLink, function (err, results) {
+            if (err !== null && err !== undefined) {
+                console.log(err);
+                return;
+            }
+
+            self.flux.actions.updateCrawlReport({
+                url: data.body.url,
+                links: rows.concat(results)
+            });
+        });
+    }, function onError(why) {
+        console.log("Error: " + why);
+    });
+
+    return p;
 };
 
 Syncer.prototype.updateMonitoredPages = function() {
@@ -111,7 +158,7 @@ Syncer.prototype._processDeleteMonitoredPage = function(url) {
     var self = this;
     var deleteOp = sendWithRetry(function() {
         return request
-                .del('/api/v1/monitored_page/' + url)
+                .del('/api/v1/monitored_page/' + encodeURIComponent(url))
                 .q();
     });
 

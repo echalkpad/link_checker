@@ -7,6 +7,7 @@ import com.eogren.link_checker.service_layer.data.*;
 import com.eogren.link_checker.service_layer.exceptions.DatabaseException;
 import com.eogren.link_checker.service_layer.health.CassandraHealthCheck;
 import com.eogren.link_checker.service_layer.resources.CrawlReportResource;
+import com.eogren.link_checker.service_layer.resources.LatestCrawlReportResource;
 import com.eogren.link_checker.service_layer.resources.MonitoredPageResource;
 
 import com.wordnik.swagger.config.ConfigFactory;
@@ -56,7 +57,8 @@ public class LinkCheckerApplication extends Application<LinkCheckerConfiguration
         // API Resources
         environment.jersey().register(new MonitoredPageResource(getMonitoredPageRepository(config), getCrawlReportRepository(config)));
         environment.jersey().register(new CrawlReportResource(getCrawlReportRepository(config), messageEmitter));
-
+        environment.jersey().register(new LatestCrawlReportResource(getCrawlReportRepository(config)));
+        
         // Health checks
         environment.healthChecks().register("cassandra", new CassandraHealthCheck(config.getCassandraFactory()));
 

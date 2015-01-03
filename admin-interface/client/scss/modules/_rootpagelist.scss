@@ -1,7 +1,14 @@
 .rootpagelist {
   li {
-    @include row();
     list-style-type: none;
+
+    div {
+        @include row();
+    }
+
+    i {
+      @include span-columns(1 of $main-width);
+    }
 
     input, span {
       @include span-columns(2 of $main-width);

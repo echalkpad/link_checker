@@ -12,6 +12,7 @@ var MonitoredPageStore = Fluxxor.createStore({
         this.monitored_pages = {};
         this.USER_ADDED_PAGE = "user_added_page";
         this.USER_DELETED_PAGE = "user_deleted_page";
+        this.USER_TOGGLED_PAGE = "user_toggled_page";
 
         this.bindActions(
             constants.ADD_MONITORED_PAGE, this.onAddMonitoredPage,
@@ -19,6 +20,15 @@ var MonitoredPageStore = Fluxxor.createStore({
             constants.UPDATE_SERVER_SYNC_STATUS, this.onUpdateServerSyncStatus,
             constants.UPDATE_MONITORED_PAGES_FROM_SERVER, this.onUpdatePagesFromServer,
             constants.TOGGLE_MONITORED_PAGE_EXPANDED_VIEW, this.onToggleExpanded
+        );
+    },
+
+    getExpandedPages: function() {
+        return _.filter(
+            _.values(this.monitored_pages),
+            function (page) {
+                return page.expanded;
+            }
         );
     },
 
@@ -113,6 +123,7 @@ var MonitoredPageStore = Fluxxor.createStore({
 
         this.monitored_pages[url].expanded = !this.monitored_pages[url].expanded;
         this.emit('change');
+        this.emit(this.USER_TOGGLED_PAGE, url, this.monitored_pages[url].expanded);
     },
 
     // can't use filter on objects
