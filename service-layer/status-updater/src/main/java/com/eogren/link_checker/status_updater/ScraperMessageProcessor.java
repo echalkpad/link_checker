@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +42,19 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
 
     @Override
     public void consumeScrapeUpdate(ScraperMessages.ScrapeUpdate msg) {
+        try {
+            // If the scrape update is for a monitored page its list of links may have changed
+            // so re-check status.
+            //
+            // TODO can actually check links as well
+            Optional<MonitoredPage> mp = apiClient.getMonitoredPage(msg.getNewStatus().getUrl());
+            if (mp.isPresent()) {
+                updateMonitoredPageStatus(mp.get());
+            }
+        } catch (IOException e) {
+            logger.warn("Error checking if " + msg.getNewStatus().getUrl() + " is a monitored page; assuming it isn't");
+        }
+
         if (msg.hasOldStatus() &&
             msg.getOldStatus().getStatus() == msg.getNewStatus().getStatus()) {
             logger.debug("ScraperUpdate has same status as before, ignoring.");
@@ -54,7 +68,7 @@ public class ScraperMessageProcessor extends com.eogren.link_checker.messaging.c
                 // in order to deal with race issues (thread 0 sees MP as OK; thread 1 runs later and sees as bad; but for
                 // some reason thread 0's post about page status happens after thread 0).
                 //
-                // XXX This blockingquee approach only works if there is one status updater in the system.
+                // XXX This blockingqueue approach only works if there is one status updater in the system.
                 // Separate Kafka topic with partition keys is probably better solution since then even if there are distributed workers they
                 // can magically coordinate among themselves.
                 updateMonitoredPageStatus(pageToUpdate);

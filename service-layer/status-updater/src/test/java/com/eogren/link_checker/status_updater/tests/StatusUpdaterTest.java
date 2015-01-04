@@ -84,6 +84,11 @@ public class StatusUpdaterTest {
         }
 
         @Override
+        public Optional<MonitoredPage> getMonitoredPage(String url) throws IOException {
+            return Optional.empty();
+        }
+
+        @Override
         public List<MonitoredPage> getMonitoredPagesThatLinkTo(String url) throws IOException {
             return pagesThatLinkTo.getOrDefault(url, new ArrayList<>());
         }
