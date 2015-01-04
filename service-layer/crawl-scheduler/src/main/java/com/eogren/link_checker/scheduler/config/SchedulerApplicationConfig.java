@@ -18,7 +18,7 @@ public class SchedulerApplicationConfig {
     protected DataApiConfig dataApiConfig;
 
     @Min(1000)
-    @Max(120000)
+    @Max(3600000)
     @DefaultValue("30000")
     protected long monitoredPageInterval;
 
