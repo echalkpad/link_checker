@@ -1,15 +1,14 @@
-FROM eogren/ubuntu_base
+FROM eogren/ubuntu_node_base
 MAINTAINER Eric Ogren <eogren@gmail.com>
 
-RUN apt-get install -y nginx
-
-# Serve from /var/www/html
-ADD docker/nginx_default /etc/nginx/sites-enabled/default
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-
 EXPOSE 80
+WORKDIR /opt/admin_interface
 
-# Add the built app to webroot
-ADD dist/ /var/www/html/
+ADD package.json /opt/admin_interface/package.json
+RUN ["npm", "install", "--production"]
 
-CMD ["nginx"]
+ADD server.js /opt/admin_interface/server.js 
+ADD config.prod.js /opt/config/admin_interface.config.js
+ADD client /opt/admin_interface/client
+
+CMD ["node", "server.js", "/opt/config/admin_interface.config.js"]

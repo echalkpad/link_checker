@@ -1,4 +1,3 @@
-var config = require('./config');
 var compression = require('compression');
 var express = require('express');
 var fs = require('fs');
@@ -6,7 +5,12 @@ var hogan = require('hogan.js');
 var morgan = require('morgan');
 var httpProxy = require('http-proxy');
 
+var config_path = './config';
+if (process.argv.length >= 3) {
+    config_path = process.argv[2];
+}
 
+var config = require(config_path);
 var app = express();
 
 if (config.baseURL === null || config.baseURL === undefined) {

@@ -2,4 +2,4 @@
 set -e
 rm -rf target
 mvn package
-sudo docker build -t eogren/service-layer .
+sudo docker build -t eogren/data-api .
